@@ -1,0 +1,42 @@
+BANCO GALICIA VISA CREDIT CARD STATEMENT
+
+Statement Number: VI00000000062132419
+Cardholder: LUCAS MATEO HERNANDEZ
+Account: 1181500877
+Branch: 123
+CUIT: 30-50000173-5
+Address: 5
+CALLE 30 1086, GENERAL PICO, L6360EGV
+
+TOTALS:
+Total Amount (Pesos): $482149.89
+Total Amount (USD): $0.01
+Minimum Payment: $35590.00
+
+LIMITS:
+Purchase Limit: $4500000.00
+Financing Limit: $4050000.00
+
+INTEREST RATES:
+Annual Nominal (Pesos): 85.6%
+Annual Nominal (USD): 20%
+Monthly Effective (Pesos): 7.036%
+Monthly Effective (USD): 1.644%
+
+TRANSACTIONS:
+Date: 2026-02-01 | Description: Spotify | Amount: $2.30 USD | Reference: 4026082
+Date: 2025-11-17 | Description: JULERIAQUE.COM.AR | Installment: 04/06 | Amount: $25000.00 ARS | Reference: 007897
+Date: 2025-12-06 | Description: PAYU*AR*ADIDAS | Installment: 03/06 | Amount: $27499.16 ARS | Reference: 005736
+Date: 2026-01-09 | Description: MERCADOPAGO KINDERLAND | Installment: 02/03 | Amount: $19996.66 ARS | Reference: 956190
+Date: 2026-01-13 | Description: MERCADOPAGO FARMACITY | Installment: 02/02 | Amount: $34663.50 ARS | Reference: 741811
+Date: 2026-01-30 | Description: WWWVENTAWEBAPNGOBAR | Amount: $52500.00 ARS | Reference: 009909
+Date: 2026-02-03 | Description: VIENTO OESTE | Installment: 01/03 | Amount: $28333.00 ARS | Reference: 000429
+Date: 2026-02-05 | Description: HIELO Y AVENTURA SA | Installment: 01/03 | Amount: $128000.00 ARS | Reference: 003326
+Date: 2026-02-08 | Description: MERCADOPAGO HOYTS | Amount: $28400.00 ARS | Reference: 266106
+Date: 2026-02-08 | Description: BODEGON FLORIDA | Amount: $102200.00 ARS | Reference: 002522
+Date: 2026-02-15 | Description: MERCADOPAGO ELAGUILA | Amount: $23500.00 ARS | Reference: 258581
+
+TAXES AND FEES:
+Date: 2026-02-19 | Description: IIBB Perception | Amount: $32.10 ARS
+Date: 2026-02-19 | Description: IVA RG 4240 | Amount: $674.26 ARS
+Date: 2026-02-19 | Description: DB.RG 5617 | Amount: $963.24 ARS

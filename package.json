@@ -1,0 +1,40 @@
+{
+  "name": "mi-expense-app",
+  "version": "1.0.0",
+  "description": "Extract structured data from credit card statements using LLMs (Gemini or GitHub Models)",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "dev": "ts-node src/index.ts",
+    "dev:gemini": "PROVIDER=gemini ts-node src/index.ts",
+    "dev:github": "PROVIDER=github ts-node src/index.ts",
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "pdf",
+    "extraction",
+    "llm",
+    "gemini",
+    "github-models",
+    "credit-card",
+    "statements"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "pdf-parse": "^1.1.1",
+    "dotenv": "^16.4.5",
+    "@google/generative-ai": "^0.19.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2",
+    "@types/node": "^20.10.6",
+    "@types/pdf-parse": "^1.1.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
