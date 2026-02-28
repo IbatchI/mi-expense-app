@@ -93,6 +93,63 @@ Example response structure:
 }`;
 
 /**
+ * Banco de la Pampa VISA Credit Card Prompt
+ * Based on real PDF analysis from Pampa VISA statements
+ */
+export const PAMPA_CREDIT_CARD_PROMPT = `You are an expert at extracting structured data from Banco de la Pampa VISA credit card statements.
+
+You will receive text from a Banco de la Pampa VISA statement. Extract the following information and return it as a JSON object with these EXACT field names:
+
+REQUIRED FIELDS (these names must match exactly):
+- holder: Extract from "TITULAR DE CUENTA:" (e.g., "HERNANDEZ LUCAS MATEO")
+- accountNumber: Extract from "N DE CUENTA:" (e.g., "1082141836")
+- bank: Always "Banco de la Pampa"
+- period: Object with these EXACT subfields:
+  - currentDueDate: Extract from "Vencimiento actual:" and convert to YYYY-MM-DD format
+  - currentClosing: Extract from "Cierre actual:" and convert to YYYY-MM-DD format  
+  - previousClosing: Extract from "Cierre anterior:" and convert to YYYY-MM-DD format
+  - previousDueDate: Extract from "Vencimiento anterior:" and convert to YYYY-MM-DD format
+- totals: Object with these EXACT subfields:
+  - pesos: Extract from "SALDO ACTUAL:" (remove $ and . separators, convert to number)
+  - dollars: US Dollar amount (usually 0 for Pampa, or extract if present)
+  - minimumPayment: Extract from "PAGO MINIMO:" (remove $ and . separators, convert to number)
+- transactions: Array of transaction objects with EXACT format specified below
+
+TRANSACTION OBJECT FORMAT:
+{
+  "date": "YYYY-MM-DD",
+  "description": "Clean merchant name (remove extra spaces and formatting)",
+  "amount": number (positive for charges, negative for payments/credits),
+  "currency": "ARS" (for pesos) or "USD" (for dollars),
+  "type": "purchase" | "payment" | "fee" | "credit" | "tax",
+  "installments": "XX/XX" (if present, e.g., "04/04") or null,
+  "reference": "Transaction reference number if present"
+}
+
+DATE CONVERSION RULES:
+Convert Spanish month abbreviations to ISO format:
+- "04 mar. 26" → "2026-03-04"  
+- "19 feb. 26" → "2026-02-19"
+- "22 ene. 26" → "2026-01-22"
+
+Spanish months: ene=01, feb=02, mar=03, abr=04, may=05, jun=06, jul=07, ago=08, sep=09, oct=10, nov=11, dic=12
+
+AMOUNT PARSING RULES:
+- "$ 521.348,70" → 521348.70
+- "$ 60.748,70" → 60748.70  
+- Remove $ symbol, remove . thousands separators, convert , to decimal point
+
+TRANSACTION PARSING EXAMPLES:
+- "01-11-25 002033 ROQUE NUBLO C.04/04 30.769,25" → 
+  date: "2025-11-01", description: "ROQUE NUBLO", amount: 30769.25, installments: "04/04"
+- "04-02-26 SU PAGO EN PESOS 4.384,07-" → 
+  date: "2026-02-04", description: "SU PAGO EN PESOS", amount: -4384.07, type: "payment"
+- "19-02-26 IMP DE SELLOS P/INT.FIN. $25,26" →
+  date: "2026-02-19", description: "IMP DE SELLOS P/INT.FIN.", amount: 25.26, type: "tax"
+
+Return only valid JSON without any markdown formatting or additional text.`;
+
+/**
  * Generic credit card prompt (fallback)
  */
 export const GENERIC_CREDIT_CARD_PROMPT = `You are an expert at extracting structured data from credit card statements.
@@ -128,8 +185,7 @@ export function getCreditCardPrompt(bank: string): string {
     case 'galicia':
       return GALICIA_CREDIT_CARD_PROMPT;
     case 'pampa':
-      // TODO: Create specific prompt for Banco Pampa
-      return GENERIC_CREDIT_CARD_PROMPT;
+      return PAMPA_CREDIT_CARD_PROMPT;
     default:
       return GENERIC_CREDIT_CARD_PROMPT;
   }

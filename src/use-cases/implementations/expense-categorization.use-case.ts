@@ -1,0 +1,305 @@
+/**
+ * Expense Categorization Use Case Implementation
+ * 
+ * Categorizes transactions into Spanish expense categories using LLM analysis.
+ * Provides confidence scores and category breakdown for financial insights.
+ */
+
+import { 
+  IExpenseCategorializationUseCase,
+  ExpenseCategorializationRequest,
+  UseCaseResult
+} from '../interfaces';
+import { IExpenseClassificationGateway, ILoggingGateway } from '../gateways/interfaces';
+import { ICategoryRepository } from '../repositories/interfaces';
+import { CATEGORY_DESIGNS } from '../../shared/constants/category-designs';
+
+export class ExpenseCategorializationUseCase implements IExpenseCategorializationUseCase {
+  constructor(
+    private readonly expenseClassificationGateway: IExpenseClassificationGateway,
+    private readonly categoryRepository: ICategoryRepository,
+    private readonly logger: ILoggingGateway
+  ) {}
+
+  async categorizeExpenses(request: ExpenseCategorializationRequest): Promise<UseCaseResult<any>> {
+    const startTime = Date.now();
+
+    try {
+      // Validate input
+      if (!request.statementData) {
+        return {
+          success: false,
+          error: 'Statement data is required',
+          metadata: { processingTime: Date.now() - startTime }
+        };
+      }
+
+      if (!request.statementData.transactions || !Array.isArray(request.statementData.transactions)) {
+        return {
+          success: false,
+          error: 'Statement must contain transactions array',
+          metadata: { processingTime: Date.now() - startTime }
+        };
+      }
+
+      if (request.statementData.transactions.length === 0) {
+        this.logger.warn('No transactions to categorize');
+        return {
+          success: true,
+          data: {
+            ...request.statementData,
+            transactions: [],
+            categoryBreakdown: {},
+            classificationMetadata: {
+              processingTime: Date.now() - startTime,
+              totalTransactions: 0,
+              categorizedTransactions: 0,
+              uncategorizedTransactions: 0
+            }
+          },
+          metadata: { processingTime: Date.now() - startTime }
+        };
+      }
+
+      this.logger.info('Starting expense categorization', {
+        transactionCount: request.statementData.transactions.length,
+        provider: request.extractorConfig.provider
+      });
+
+      // Get available categories
+      const categoriesResult = await this.categoryRepository.findAll();
+      let categories: any[] = [];
+
+      if (categoriesResult.success && categoriesResult.data) {
+        categories = categoriesResult.data.map(cat => ({
+          name: cat.name,
+          tags: cat.tags,
+          description: cat.description
+        }));
+      } else {
+        // Fallback to built-in categories
+        categories = this.getBuiltInCategories();
+        this.logger.warn('Using built-in categories (repository unavailable)', {
+          error: categoriesResult.error
+        });
+      }
+
+      this.logger.debug('Categories loaded', {
+        categoryCount: categories.length,
+        categoryNames: categories.map(c => c.name)
+      });
+
+      // Classify expenses using the gateway
+      const classificationResult = await this.expenseClassificationGateway.classifyExpenses({
+        transactions: request.statementData.transactions,
+        categories: categories,
+        options: {
+          confidenceThreshold: 0.3, // Lower threshold for Spanish categories
+          allowMultipleCategories: false,
+          includeReasons: true
+        }
+      });
+
+      if (!classificationResult.success || !classificationResult.data) {
+        return {
+          success: false,
+          error: `Expense classification failed: ${classificationResult.error}`,
+          metadata: { processingTime: Date.now() - startTime }
+        };
+      }
+
+      const classifiedData = classificationResult.data;
+
+      // Enhance categorized transactions with category designs
+      const enhancedTransactions = classifiedData.categorizedTransactions.map((ctx: any) => ({
+        ...ctx.transaction,
+        category: ctx.category,
+        confidence: ctx.confidence,
+        tags: ctx.tags,
+        reasoning: ctx.reasoning,
+        categoryDesign: this.getCategoryDesign(ctx.category)
+      }));
+
+      // Add uncategorized transactions
+      const allTransactions = [
+        ...enhancedTransactions,
+        ...classifiedData.uncategorizedTransactions
+      ];
+
+      // Calculate enhanced category breakdown with Money objects and percentages
+      const categoryBreakdown = this.calculateCategoryBreakdown(enhancedTransactions);
+
+      // Create final result
+      const result = {
+        ...request.statementData,
+        transactions: allTransactions,
+        categoryBreakdown: categoryBreakdown,
+        classificationMetadata: {
+          processingTime: Date.now() - startTime,
+          totalTransactions: request.statementData.transactions.length,
+          categorizedTransactions: enhancedTransactions.length,
+          uncategorizedTransactions: classifiedData.uncategorizedTransactions.length,
+          provider: request.extractorConfig.provider,
+          model: request.extractorConfig.model,
+          categories: categories.map(c => c.name)
+        }
+      };
+
+      this.logger.info('Expense categorization completed', {
+        totalTransactions: result.classificationMetadata.totalTransactions,
+        categorizedTransactions: result.classificationMetadata.categorizedTransactions,
+        uncategorizedTransactions: result.classificationMetadata.uncategorizedTransactions,
+        categorizationRate: (result.classificationMetadata.categorizedTransactions / result.classificationMetadata.totalTransactions * 100).toFixed(1),
+        categoriesFound: Object.keys(categoryBreakdown).length,
+        processingTime: Date.now() - startTime
+      });
+
+      return {
+        success: true,
+        data: result,
+        metadata: {
+          processingTime: Date.now() - startTime,
+          categorizedCount: enhancedTransactions.length,
+          uncategorizedCount: classifiedData.uncategorizedTransactions.length,
+          categorizationRate: enhancedTransactions.length / request.statementData.transactions.length
+        }
+      };
+
+    } catch (error) {
+      this.logger.error('Expense categorization error', {
+        error: error instanceof Error ? error.message : error,
+        transactionCount: request.statementData?.transactions?.length || 0
+      });
+
+      return {
+        success: false,
+        error: `Expense categorization failed: ${error instanceof Error ? error.message : error}`,
+        metadata: { processingTime: Date.now() - startTime }
+      };
+    }
+  }
+
+  private getBuiltInCategories(): any[] {
+    return [
+      {
+        name: "Hogar",
+        tags: ["#alquiler", "#expensas", "#luz", "#gas", "#agua", "#internet"],
+        description: "Gastos relacionados con la vivienda"
+      },
+      {
+        name: "Alimentación",
+        tags: ["#supermercado", "#restaurantes", "#delivery", "#cafe", "#snacks"],
+        description: "Comida y bebidas"
+      },
+      {
+        name: "Transporte",
+        tags: ["#combustible", "#transporte_publico", "#uber", "#taxi", "#peajes", "#mantenimiento_auto"],
+        description: "Transporte y vehículos"
+      },
+      {
+        name: "Ocio y Entretenimiento",
+        tags: ["#salidas", "#streaming", "#cine", "#eventos", "#juegos"],
+        description: "Entretenimiento y recreación"
+      },
+      {
+        name: "Salud",
+        tags: ["#obra_social", "#seguro_medico", "#medicamentos", "#consultas_medicas"],
+        description: "Gastos médicos y de salud"
+      },
+      {
+        name: "Compras Personales",
+        tags: ["#ropa", "#tecnologia", "#accesorios"],
+        description: "Compras personales y ropa"
+      },
+      {
+        name: "Educación",
+        tags: ["#cursos", "#libros", "#suscripciones_educativas"],
+        description: "Educación y formación"
+      },
+      {
+        name: "Mascotas",
+        tags: ["#alimento_mascota", "#veterinario"],
+        description: "Cuidado de mascotas"
+      },
+      {
+        name: "Trabajo / Negocio",
+        tags: ["#gastos_laborales", "#herramientas", "#materiales"],
+        description: "Gastos relacionados con el trabajo"
+      },
+      {
+        name: "Otros",
+        tags: ["#varios", "#miscelaneos"],
+        description: "Gastos varios no categorizados"
+      }
+    ];
+  }
+
+  private getCategoryDesign(categoryName: string): any {
+    // Find category design from constants
+    const design = CATEGORY_DESIGNS[categoryName];
+    
+    if (design) {
+      return {
+        icon: design.icon,
+        color: design.color
+      };
+    }
+
+    // Default design for unknown categories
+    return {
+      icon: 'shopping-bag',
+      color: '#6B7280'
+    };
+  }
+
+  private calculateCategoryBreakdown(categorizedTransactions: any[]): any {
+    const breakdown: { [categoryName: string]: { total: number; count: number; currency: string; } } = {};
+    
+    // Calculate totals by category (only positive amounts - expenses)
+    const expenseTransactions = categorizedTransactions.filter(tx => {
+      const amount = tx.amount || tx.amountPesos || 0;
+      return amount > 0; // Only expenses, not payments
+    });
+
+    const totalAmount = expenseTransactions.reduce((sum, tx) => {
+      const amount = tx.amount || tx.amountPesos || 0;
+      return sum + amount;
+    }, 0);
+
+    for (const transaction of expenseTransactions) {
+      const categoryName = transaction.category;
+      const amount = transaction.amount || transaction.amountPesos || 0;
+      const currency = transaction.currency || (transaction.amountDollars > 0 ? 'USD' : 'ARS');
+
+      if (!breakdown[categoryName]) {
+        breakdown[categoryName] = {
+          total: 0,
+          count: 0,
+          currency: currency
+        };
+      }
+
+      // Only add amounts of the same currency
+      if (breakdown[categoryName].currency === currency) {
+        breakdown[categoryName].total += amount;
+        breakdown[categoryName].count += 1;
+      }
+    }
+
+    // Convert to final format with percentages
+    const result: any = {};
+    for (const [categoryName, data] of Object.entries(breakdown)) {
+      const percentage = totalAmount > 0 ? (data.total / totalAmount) * 100 : 0;
+      const avgAmount = data.count > 0 ? data.total / data.count : 0;
+      
+      result[categoryName] = {
+        total: data.total,
+        count: data.count,
+        percentage: Math.round(percentage * 10) / 10, // Round to 1 decimal
+        averageAmount: Math.round(avgAmount * 100) / 100 // Round to 2 decimals
+      };
+    }
+
+    return result;
+  }
+}
