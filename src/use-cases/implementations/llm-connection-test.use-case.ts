@@ -6,11 +6,11 @@
  */
 
 import { ILLMConnectionTestUseCase, StatementExtractionRequest } from '../interfaces';
-import { ILLMExtractionGateway, ILoggingGateway } from '../gateways/interfaces';
+import { ILoggingGateway } from '../gateways/interfaces';
+import { LLMGatewayFactory } from '../../adapters/gateways/llm-gateway.factory';
 
 export class LLMConnectionTestUseCase implements ILLMConnectionTestUseCase {
   constructor(
-    private readonly llmExtractionGateway: ILLMExtractionGateway,
     private readonly logger: ILoggingGateway
   ) {}
 
@@ -28,8 +28,11 @@ export class LLMConnectionTestUseCase implements ILLMConnectionTestUseCase {
         return false;
       }
 
+      // Create a gateway instance for this specific request
+      const gateway = LLMGatewayFactory.createFromExtractorConfig(extractorConfig);
+
       // Test connection with a simple prompt
-      const testResult = await this.llmExtractionGateway.extractData({
+      const testResult = await gateway.extractData({
         prompt: "Test connection. Respond with a simple JSON object containing 'status': 'ok'",
         text: "This is a test",
         format: 'json'

@@ -10,11 +10,11 @@ import {
   StatementExtractionRequest,
   UseCaseResult
 } from '../interfaces';
-import { ILLMExtractionGateway, ILoggingGateway } from '../gateways/interfaces';
+import { ILoggingGateway } from '../gateways/interfaces';
+import { LLMGatewayFactory } from '../../adapters/gateways/llm-gateway.factory';
 
 export class StatementExtractionUseCase implements IStatementExtractionUseCase {
   constructor(
-    private readonly llmExtractionGateway: ILLMExtractionGateway,
     private readonly logger: ILoggingGateway
   ) {}
 
@@ -46,6 +46,9 @@ export class StatementExtractionUseCase implements IStatementExtractionUseCase {
         model: request.extractorConfig.model
       });
 
+      // Create a gateway instance for this specific request
+      const gateway = LLMGatewayFactory.createFromExtractorConfig(request.extractorConfig);
+
       // Get bank-specific prompt
       const prompt = this.getBankSpecificPrompt(request.bankType);
       const fullPrompt = prompt + "\n\nSTATEMENT TEXT:\n" + request.cleanedText;
@@ -53,11 +56,11 @@ export class StatementExtractionUseCase implements IStatementExtractionUseCase {
       this.logger.debug('Prompt prepared', {
         bankType: request.bankType,
         promptLength: fullPrompt.length,
-        estimatedTokens: this.llmExtractionGateway.estimateTokens(fullPrompt)
+        estimatedTokens: gateway.estimateTokens(fullPrompt)
       });
 
       // Extract data using LLM
-      const extractionResult = await this.llmExtractionGateway.extractData({
+      const extractionResult = await gateway.extractData({
         prompt: fullPrompt,
         text: request.cleanedText,
         format: 'json',

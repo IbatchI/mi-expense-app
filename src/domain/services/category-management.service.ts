@@ -273,6 +273,12 @@ export class CategoryManagementService {
         description: "Gastos relacionados con el trabajo"
       },
       {
+        name: "Descuentos",
+        englishName: "Discounts",
+        tags: ["#descuento", "#promocion", "#rebate", "#cashback", "#reintegro", "#bonificacion"],
+        description: "Descuentos y reintegros en compras"
+      },
+      {
         name: "Otros",
         englishName: "Other",
         tags: ["#varios", "#miscelaneos", "#otros"],

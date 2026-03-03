@@ -65,6 +65,12 @@ export const CATEGORY_DESIGNS: Record<string, CategoryDesign> = {
     lightColor: "#F0EFFF",
     textColor: "#FFFFFF"
   },
+  "Descuentos": {
+    icon: "💸",
+    color: "#00B894",
+    lightColor: "#E8F7F1",
+    textColor: "#FFFFFF"
+  },
   "Sin Categoría": {
     icon: "❓",
     color: "#636E72",

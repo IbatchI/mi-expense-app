@@ -35,7 +35,7 @@ export class GeminiExtractor extends BaseExtractor {
         generationConfig: {
           temperature: 0,
           topP: 1,
-          maxOutputTokens: 8192,
+          maxOutputTokens: 16384,
         },
       });
 

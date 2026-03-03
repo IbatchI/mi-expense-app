@@ -10,13 +10,14 @@ import {
   ExpenseCategorializationRequest,
   UseCaseResult
 } from '../interfaces';
-import { IExpenseClassificationGateway, ILoggingGateway } from '../gateways/interfaces';
+import { ILoggingGateway } from '../gateways/interfaces';
 import { ICategoryRepository } from '../repositories/interfaces';
 import { CATEGORY_DESIGNS } from '../../shared/constants/category-designs';
+import { LLMGatewayFactory } from '../../adapters/gateways/llm-gateway.factory';
+import { ExpenseClassificationGateway } from '../../adapters/gateways/expense-classification.gateway';
 
 export class ExpenseCategorializationUseCase implements IExpenseCategorializationUseCase {
   constructor(
-    private readonly expenseClassificationGateway: IExpenseClassificationGateway,
     private readonly categoryRepository: ICategoryRepository,
     private readonly logger: ILoggingGateway
   ) {}
@@ -66,6 +67,12 @@ export class ExpenseCategorializationUseCase implements IExpenseCategorializatio
         provider: request.extractorConfig.provider
       });
 
+      // Create LLM gateway for this specific request
+      const llmGateway = LLMGatewayFactory.createFromExtractorConfig(request.extractorConfig);
+      
+      // Create expense classification gateway with the LLM gateway
+      const expenseClassificationGateway = new ExpenseClassificationGateway(llmGateway);
+
       // Get available categories
       const categoriesResult = await this.categoryRepository.findAll();
       let categories: any[] = [];
@@ -90,7 +97,7 @@ export class ExpenseCategorializationUseCase implements IExpenseCategorializatio
       });
 
       // Classify expenses using the gateway
-      const classificationResult = await this.expenseClassificationGateway.classifyExpenses({
+      const classificationResult = await expenseClassificationGateway.classifyExpenses({
         transactions: request.statementData.transactions,
         categories: categories,
         options: {
@@ -255,18 +262,17 @@ export class ExpenseCategorializationUseCase implements IExpenseCategorializatio
   private calculateCategoryBreakdown(categorizedTransactions: any[]): any {
     const breakdown: { [categoryName: string]: { total: number; count: number; currency: string; } } = {};
     
-    // Calculate totals by category (only positive amounts - expenses)
-    const expenseTransactions = categorizedTransactions.filter(tx => {
-      const amount = tx.amount || tx.amountPesos || 0;
-      return amount > 0; // Only expenses, not payments
+    // Calculate totals by category (expenses and discounts, exclude payments)
+    const relevantTransactions = categorizedTransactions.filter(tx => {
+      return tx.type !== 'payment'; // Exclude actual credit card payments
     });
 
-    const totalAmount = expenseTransactions.reduce((sum, tx) => {
+    const totalAmount = relevantTransactions.reduce((sum, tx) => {
       const amount = tx.amount || tx.amountPesos || 0;
       return sum + amount;
     }, 0);
 
-    for (const transaction of expenseTransactions) {
+    for (const transaction of relevantTransactions) {
       const categoryName = transaction.category;
       const amount = transaction.amount || transaction.amountPesos || 0;
       const currency = transaction.currency || (transaction.amountDollars > 0 ? 'USD' : 'ARS');

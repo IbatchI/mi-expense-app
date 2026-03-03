@@ -1,10 +1,10 @@
-import { BaseExtractor } from '../extractors/base.extractor';
-import { 
-  CategorizedStatement, 
-  CategorizedTransaction, 
-  CategoryBreakdown, 
-  ClassificationResult 
-} from '../types/credit-card.types';
+import { BaseExtractor } from "../extractors/base.extractor";
+import {
+  CategorizedStatement,
+  CategorizedTransaction,
+  CategoryBreakdown,
+  ClassificationResult,
+} from "../types/credit-card.types";
 
 /**
  * ExpenseClassifier - Categorizes credit card transactions into expense categories
@@ -12,49 +12,67 @@ import {
  */
 export class ExpenseClassifier {
   private extractor: BaseExtractor;
-  
+
   // Category mappings with Spanish to English translation
-  private readonly CATEGORIES: { [key: string]: { en: string; tags: string[] } } = {
-    "Hogar": { 
-      en: "Home", 
-      tags: ["#alquiler", "#expensas", "#luz", "#gas", "#agua", "#internet"] 
+  private readonly CATEGORIES: {
+    [key: string]: { en: string; tags: string[] };
+  } = {
+    Hogar: {
+      en: "Home",
+      tags: ["#alquiler", "#expensas", "#luz", "#gas", "#agua", "#internet"],
     },
-    "Alimentación": { 
-      en: "Food", 
-      tags: ["#supermercado", "#restaurantes", "#delivery", "#cafe", "#snacks"] 
+    Alimentación: {
+      en: "Food",
+      tags: ["#supermercado", "#restaurantes", "#delivery", "#cafe", "#snacks"],
     },
-    "Transporte": { 
-      en: "Transport", 
-      tags: ["#combustible", "#transporte_publico", "#uber", "#taxi", "#peajes", "#mantenimiento_auto"] 
+    Transporte: {
+      en: "Transport",
+      tags: [
+        "#combustible",
+        "#transporte_publico",
+        "#uber",
+        "#taxi",
+        "#peajes",
+        "#mantenimiento_auto",
+      ],
     },
-    "Ocio y Entretenimiento": { 
-      en: "Entertainment", 
-      tags: ["#salidas", "#streaming", "#cine", "#eventos", "#juegos"] 
+    "Ocio y Entretenimiento": {
+      en: "Entertainment",
+      tags: ["#salidas", "#streaming", "#cine", "#eventos", "#juegos"],
     },
-    "Salud": { 
-      en: "Health", 
-      tags: ["#obra_social", "#seguro_medico", "#medicamentos", "#consultas_medicas"] 
+    Salud: {
+      en: "Health",
+      tags: [
+        "#obra_social",
+        "#seguro_medico",
+        "#medicamentos",
+        "#consultas_medicas",
+      ],
     },
-    "Compras Personales": { 
-      en: "Personal Shopping", 
-      tags: ["#ropa", "#tecnologia", "#accesorios"] 
+    "Compras Personales": {
+      en: "Personal Shopping",
+      tags: ["#ropa", "#tecnologia", "#accesorios"],
     },
-    "Educación": { 
-      en: "Education", 
-      tags: ["#cursos", "#libros", "#suscripciones_educativas"] 
+    Educación: {
+      en: "Education",
+      tags: ["#cursos", "#libros", "#suscripciones_educativas"],
     },
-    "Mascotas": { 
-      en: "Pets", 
-      tags: ["#alimento_mascota", "#veterinario"] 
+    Mascotas: {
+      en: "Pets",
+      tags: ["#alimento_mascota", "#veterinario"],
     },
-    "Trabajo / Negocio": { 
-      en: "Work/Business", 
-      tags: ["#software", "#herramientas", "#equipamiento"] 
+    "Trabajo / Negocio": {
+      en: "Work/Business",
+      tags: ["#software", "#herramientas", "#equipamiento"],
     },
-    "Sin Categoría": { 
-      en: "Uncategorized", 
-      tags: ["#sin_clasificar"] 
-    }
+    Descuentos: {
+      en: "Discounts",
+      tags: ["#descuento", "#promocion", "#rebate", "#cashback", "#reintegro"],
+    },
+    "Sin Categoría": {
+      en: "Uncategorized",
+      tags: ["#sin_clasificar"],
+    },
   };
 
   constructor(extractor: BaseExtractor) {
@@ -64,38 +82,53 @@ export class ExpenseClassifier {
   /**
    * Main method: Classify all transactions in extracted data
    */
-  async classifyTransactions(extractedData: any): Promise<ClassificationResult> {
+  async classifyTransactions(
+    extractedData: any,
+  ): Promise<ClassificationResult> {
     const startTime = Date.now();
-    
+
     try {
-      console.log('   🔍 Analyzing transactions for categorization...');
-      
-      if (!extractedData.transactions || !Array.isArray(extractedData.transactions)) {
-        throw new Error('No transactions found in extracted data');
+      console.log("   🔍 Analyzing transactions for categorization...");
+
+      if (
+        !extractedData.transactions ||
+        !Array.isArray(extractedData.transactions)
+      ) {
+        throw new Error("No transactions found in extracted data");
       }
 
       const transactions = extractedData.transactions;
-      console.log(`   📊 Found ${transactions.length} transactions to classify`);
+      console.log(
+        `   📊 Found ${transactions.length} transactions to classify`,
+      );
 
       // Generate classification prompt
       const prompt = this.generateClassificationPrompt(transactions);
-      console.log(`   📝 Generated classification prompt (${prompt.length} chars)`);
+      console.log(
+        `   📝 Generated classification prompt (${prompt.length} chars)`,
+      );
 
       // Call LLM for classification
-      const classificationResponse = await (this.extractor as any).extractData(prompt);
-      
+      const classificationResponse = await (this.extractor as any).extractData(
+        prompt,
+      );
+
       // Parse response
-      const classifications = this.parseClassificationResponse(classificationResponse);
+      const classifications = this.parseClassificationResponse(
+        classificationResponse,
+      );
       console.log(`   ✅ Parsed ${classifications.length} classifications`);
 
       // Merge original data with classifications
       const categorizedTransactions = this.mergeClassificationResults(
-        transactions, 
-        classifications
+        transactions,
+        classifications,
       );
 
       // Calculate category breakdown
-      const categoryBreakdown = this.calculateCategoryBreakdown(categorizedTransactions);
+      const categoryBreakdown = this.calculateCategoryBreakdown(
+        categorizedTransactions,
+      );
 
       // Build categorized statement
       const categorizedStatement: CategorizedStatement = {
@@ -105,9 +138,13 @@ export class ExpenseClassifier {
         classificationMetadata: {
           processingTime: Date.now() - startTime,
           totalTransactions: transactions.length,
-          categorizedTransactions: categorizedTransactions.filter(t => t.category !== "Sin Categoría").length,
-          uncategorizedTransactions: categorizedTransactions.filter(t => t.category === "Sin Categoría").length
-        }
+          categorizedTransactions: categorizedTransactions.filter(
+            (t) => t.category !== "Sin Categoría",
+          ).length,
+          uncategorizedTransactions: categorizedTransactions.filter(
+            (t) => t.category === "Sin Categoría",
+          ).length,
+        },
       };
 
       const processingTime = Date.now() - startTime;
@@ -117,22 +154,24 @@ export class ExpenseClassifier {
         data: categorizedStatement,
         metadata: {
           processingTime,
-          provider: (this.extractor as any).config?.provider || 'unknown',
-          model: (this.extractor as any).config?.model || 'unknown'
-        }
+          provider: (this.extractor as any).config?.provider || "unknown",
+          model: (this.extractor as any).config?.model || "unknown",
+        },
       };
-
     } catch (error) {
       const processingTime = Date.now() - startTime;
-      
+
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown classification error',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown classification error",
         metadata: {
           processingTime,
-          provider: (this.extractor as any).config?.provider || 'unknown',
-          model: (this.extractor as any).config?.model || 'unknown'
-        }
+          provider: (this.extractor as any).config?.provider || "unknown",
+          model: (this.extractor as any).config?.model || "unknown",
+        },
       };
     }
   }
@@ -141,10 +180,12 @@ export class ExpenseClassifier {
    * Generate classification prompt for LLM
    */
   private generateClassificationPrompt(transactions: any[]): string {
-    const transactionList = transactions.map((t, index) => {
-      const amount = this.getTransactionAmount(t);
-      return `${index + 1}. "${t.description || t.merchant}" - $${amount} - Type: ${t.type}`;
-    }).join('\n');
+    const transactionList = transactions
+      .map((t, index) => {
+        const amount = this.getTransactionAmount(t);
+        return `${index + 1}. "${t.description || t.merchant}" - $${amount} - Type: ${t.type}`;
+      })
+      .join("\n");
 
     return `You are an expert in categorizing personal expenses for Argentinian credit card transactions.
 
@@ -190,36 +231,42 @@ IMPORTANT: Respond ONLY with valid JSON, no additional text:
   }
 
   /**
-   * Parse and validate LLM classification response  
+   * Parse and validate LLM classification response
    */
   private parseClassificationResponse(response: string | any): any[] {
     try {
       let parsedResponse;
-      
-      if (typeof response === 'string') {
+
+      if (typeof response === "string") {
         // Clean potential markdown formatting
         const cleanedResponse = response
-          .replace(/```json\s*/g, '')
-          .replace(/```\s*$/g, '')
+          .replace(/```json\s*/g, "")
+          .replace(/```\s*$/g, "")
           .trim();
-        
+
         parsedResponse = JSON.parse(cleanedResponse);
       } else {
         parsedResponse = response;
       }
 
-      if (!parsedResponse.classifications || !Array.isArray(parsedResponse.classifications)) {
-        throw new Error('Invalid response format: missing classifications array');
+      if (
+        !parsedResponse.classifications ||
+        !Array.isArray(parsedResponse.classifications)
+      ) {
+        throw new Error(
+          "Invalid response format: missing classifications array",
+        );
       }
 
-      return parsedResponse.classifications.filter((classification: any) => 
-        this.validateClassification(classification)
+      return parsedResponse.classifications.filter((classification: any) =>
+        this.validateClassification(classification),
       );
-      
     } catch (error) {
-      console.error('   ❌ Failed to parse classification response:', error);
-      console.error('   📄 Raw response:', response);
-      throw new Error(`Failed to parse LLM classification response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("   ❌ Failed to parse classification response:", error);
+      console.error("   📄 Raw response:", response);
+      throw new Error(
+        `Failed to parse LLM classification response: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -227,47 +274,59 @@ IMPORTANT: Respond ONLY with valid JSON, no additional text:
    * Combine original transaction data with classification results
    */
   private mergeClassificationResults(
-    originalTransactions: any[], 
-    classifications: any[]
+    originalTransactions: any[],
+    classifications: any[],
   ): CategorizedTransaction[] {
     return originalTransactions.map((transaction, index) => {
       // Find matching classification by index or description
-      const classification = classifications.find(c => 
-        c.index === index + 1 || 
-        c.description === transaction.description ||
-        c.description === transaction.merchant
+      const classification = classifications.find(
+        (c) =>
+          c.index === index + 1 ||
+          c.description === transaction.description ||
+          c.description === transaction.merchant,
       );
 
       return {
         ...transaction,
         category: classification?.category || "Sin Categoría",
         tags: classification?.tags || ["#sin_clasificar"],
-        confidence: classification?.confidence || 0.0
+        confidence: classification?.confidence || 0.0,
       };
     });
   }
 
   /**
-   * Calculate category breakdown statistics
+   * Calculate category breakdown statistics (exclude payments, include discounts)
    */
-  private calculateCategoryBreakdown(transactions: CategorizedTransaction[]): CategoryBreakdown {
+  private calculateCategoryBreakdown(
+    transactions: CategorizedTransaction[],
+  ): CategoryBreakdown {
     const breakdown: CategoryBreakdown = {};
-    const totalAmount = transactions.reduce((sum, t) => sum + this.getTransactionAmount(t), 0);
+    
+    // Filter out payments but include discounts/credits
+    const relevantTransactions = transactions.filter(t => 
+      t.type !== 'payment' // Exclude actual credit card payments
+    );
+    
+    const totalAmount = relevantTransactions.reduce(
+      (sum, t) => sum + this.getTransactionAmount(t),
+      0,
+    );
 
     // Initialize all categories
-    Object.keys(this.CATEGORIES).forEach(category => {
+    Object.keys(this.CATEGORIES).forEach((category) => {
       breakdown[category] = {
         total: 0,
         count: 0,
-        percentage: 0
+        percentage: 0,
       };
     });
 
     // Calculate totals for each category
-    transactions.forEach(transaction => {
+    relevantTransactions.forEach((transaction) => {
       const category = transaction.category;
       const amount = this.getTransactionAmount(transaction);
-      
+
       if (breakdown[category]) {
         breakdown[category].total += amount;
         breakdown[category].count += 1;
@@ -275,14 +334,15 @@ IMPORTANT: Respond ONLY with valid JSON, no additional text:
     });
 
     // Calculate percentages
-    Object.keys(breakdown).forEach(category => {
+    Object.keys(breakdown).forEach((category) => {
       if (totalAmount > 0) {
-        breakdown[category].percentage = (breakdown[category].total / totalAmount) * 100;
+        breakdown[category].percentage =
+          (breakdown[category].total / totalAmount) * 100;
       }
     });
 
     // Remove empty categories
-    Object.keys(breakdown).forEach(category => {
+    Object.keys(breakdown).forEach((category) => {
       if (breakdown[category].count === 0) {
         delete breakdown[category];
       }
@@ -292,22 +352,22 @@ IMPORTANT: Respond ONLY with valid JSON, no additional text:
   }
 
   /**
-   * Normalize transaction amount (handle both Galicia and Pampa formats)
+   * Get transaction amount (preserve sign for discount/payment detection)
    */
   private getTransactionAmount(transaction: any): number {
-    // Handle different amount formats
-    if (typeof transaction.amount === 'number') {
-      return Math.abs(transaction.amount); // Pampa format
+    // Handle different amount formats - preserve negative amounts
+    if (typeof transaction.amount === "number") {
+      return transaction.amount; // Pampa format - preserve sign
     }
-    
-    if (typeof transaction.amountPesos === 'number') {
-      return Math.abs(transaction.amountPesos); // Galicia format
+
+    if (typeof transaction.amountPesos === "number") {
+      return transaction.amountPesos; // Galicia format - preserve sign
     }
-    
-    if (typeof transaction.amountUSD === 'number') {
-      return Math.abs(transaction.amountUSD * 1000); // Convert USD to approximate pesos
+
+    if (typeof transaction.amountUSD === "number") {
+      return transaction.amountUSD * 1000; // Convert USD to approximate pesos - preserve sign
     }
-    
+
     return 0; // Fallback
   }
 
@@ -315,11 +375,11 @@ IMPORTANT: Respond ONLY with valid JSON, no additional text:
    * Validate that classification makes sense
    */
   private validateClassification(classification: any): boolean {
-    if (!classification || typeof classification !== 'object') {
+    if (!classification || typeof classification !== "object") {
       return false;
     }
 
-    const requiredFields = ['category', 'tags', 'confidence'];
+    const requiredFields = ["category", "tags", "confidence"];
     for (const field of requiredFields) {
       if (!(field in classification)) {
         return false;
@@ -345,16 +405,16 @@ IMPORTANT: Respond ONLY with valid JSON, no additional text:
    */
   getCategoryEmoji(category: string): string {
     const emojis: { [key: string]: string } = {
-      "Hogar": "🏠",
-      "Alimentación": "🍔", 
-      "Transporte": "🚗",
+      Hogar: "🏠",
+      Alimentación: "🍔",
+      Transporte: "🚗",
       "Ocio y Entretenimiento": "🎉",
-      "Salud": "🏥",
+      Salud: "🏥",
       "Compras Personales": "👕",
-      "Educación": "📚",
-      "Mascotas": "🐶", 
+      Educación: "📚",
+      Mascotas: "🐶",
       "Trabajo / Negocio": "💼",
-      "Sin Categoría": "🧾"
+      "Sin Categoría": "🧾",
     };
     return emojis[category] || "📁";
   }

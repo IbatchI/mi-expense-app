@@ -154,7 +154,7 @@ OUTPUT_PATH=output/data.json       # Custom output path
 ### Gemini (Free)
 
 - `gemini-3-flash-review` (default) - Fast and efficient
-- `gemini-1.5-pro` - More capable but slower
+- `gemini-3-flash-preview` - More capable but slower
 - `gemini-1.0-pro` - Legacy model
 
 ### GitHub Models (Requires Copilot Pro)

@@ -36,7 +36,7 @@ TRANSACTION OBJECT FORMAT:
   "currency": "ARS" or "USD",
   "installments": "XX/YY" (if applicable),
   "reference": "Reference number",
-  "type": "purchase" | "payment" | "fee" | "tax"
+  "type": "purchase" | "payment" | "fee" | "credit" | "discount" | "tax"
 }
 
 REAL EXAMPLES FROM GALICIA STATEMENTS:
@@ -121,10 +121,27 @@ TRANSACTION OBJECT FORMAT:
   "description": "Clean merchant name (remove extra spaces and formatting)",
   "amount": number (positive for charges, negative for payments/credits),
   "currency": "ARS" (for pesos) or "USD" (for dollars),
-  "type": "purchase" | "payment" | "fee" | "credit" | "tax",
+  "type": "purchase" | "payment" | "fee" | "credit" | "discount" | "tax",
   "installments": "XX/XX" (if present, e.g., "04/04") or null,
   "reference": "Transaction reference number if present"
 }
+
+NEGATIVE AMOUNT DETECTION RULES (CRITICAL):
+For negative amounts, distinguish between actual credit card PAYMENTS vs promotional DISCOUNTS:
+
+PAYMENT INDICATORS (type: "payment" - exclude from categorization):
+- Description contains: "PAGO", "PAYMENT", "DEBITO", "DEBIT", "TRANSFERENCIA", "TRANSFER"
+- Examples: "SU PAGO EN PESOS", "PAGO TARJETA DE CREDITO", "DEBITO AUTOMATICO"
+- These represent actual payments TO the credit card and should NOT be categorized as expenses
+
+DISCOUNT INDICATORS (type: "discount" - categorize with Descuentos category):
+- Description contains: "DESCUENTO", "DISCOUNT", "PROMOCION", "PROMO", "REINTEGRO", "CASHBACK", "BONIFICACION", "REBATE"
+- Examples: "DESCUENTO PROMOCIONAL", "REINTEGRO SUPERMERCADO", "CASHBACK BANCO"
+- These represent promotional benefits/rebates and SHOULD be categorized as discounts
+
+CREDIT INDICATORS (type: "credit" - categorize based on context):
+- Any other negative amount that doesn't clearly fit payment or discount categories
+- Will be categorized by the AI based on transaction context
 
 DATE CONVERSION RULES:
 Convert Spanish month abbreviations to ISO format:
@@ -141,11 +158,15 @@ AMOUNT PARSING RULES:
 
 TRANSACTION PARSING EXAMPLES:
 - "01-11-25 002033 ROQUE NUBLO C.04/04 30.769,25" → 
-  date: "2025-11-01", description: "ROQUE NUBLO", amount: 30769.25, installments: "04/04"
+  date: "2025-11-01", description: "ROQUE NUBLO", amount: 30769.25, installments: "04/04", type: "purchase"
 - "04-02-26 SU PAGO EN PESOS 4.384,07-" → 
   date: "2026-02-04", description: "SU PAGO EN PESOS", amount: -4384.07, type: "payment"
 - "19-02-26 IMP DE SELLOS P/INT.FIN. $25,26" →
   date: "2026-02-19", description: "IMP DE SELLOS P/INT.FIN.", amount: 25.26, type: "tax"
+- "15-01-26 DESCUENTO PROMOCIONAL SUPER 500,00-" →
+  date: "2026-01-15", description: "DESCUENTO PROMOCIONAL SUPER", amount: -500.00, type: "discount"
+- "22-02-26 REINTEGRO BANCO PAMPA 1.200,50-" →
+  date: "2026-02-22", description: "REINTEGRO BANCO PAMPA", amount: -1200.50, type: "discount"
 
 Return only valid JSON without any markdown formatting or additional text.`;
 

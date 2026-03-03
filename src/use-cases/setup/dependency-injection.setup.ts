@@ -20,9 +20,7 @@ import { CompleteFileProcessingUseCase } from '../implementations/complete-file-
 import {
   PDFProcessorGateway,
   BankDetectionGateway,
-  TextPreprocessorGateway,
-  LLMExtractionGateway,
-  ExpenseClassificationGateway
+  TextPreprocessorGateway
 } from '../../adapters/gateways';
 
 // Domain Services
@@ -60,7 +58,7 @@ export class UseCaseFactory {
     );
   }
 
-  private registerGateways(config: AppConfig): void {
+  private registerGateways(_config: AppConfig): void {
     // PDF Processor Gateway
     this.container.registerTransient(
       'PDFProcessorGateway',
@@ -79,20 +77,8 @@ export class UseCaseFactory {
       () => new TextPreprocessorGateway()
     );
 
-    // LLM Extraction Gateway
-    this.container.registerTransient(
-      'LLMExtractionGateway',
-      () => new LLMExtractionGateway(config.llm)
-    );
-
-    // Expense Classification Gateway
-    this.container.registerTransient(
-      'ExpenseClassificationGateway',
-      () => {
-        const llmGateway = this.container.resolve('LLMExtractionGateway');
-        return new ExpenseClassificationGateway(llmGateway);
-      }
-    );
+    // Note: LLM gateways are now created dynamically per-request using LLMGatewayFactory
+    // They are no longer registered in the DI container
   }
 
   private registerRepositories(): void {
@@ -201,30 +187,27 @@ export class UseCaseFactory {
       )
     );
 
-    // Statement Extraction Use Case
+    // Statement Extraction Use Case (no longer needs gateway injected)
     this.container.registerTransient(
       'StatementExtractionUseCase',
       () => new StatementExtractionUseCase(
-        this.container.resolve('LLMExtractionGateway'),
         this.container.resolve(SERVICE_TOKENS.LOGGER.name)
       )
     );
 
-    // Expense Categorization Use Case
+    // Expense Categorization Use Case (no longer needs classification gateway injected)
     this.container.registerTransient(
       'ExpenseCategorializationUseCase',
       () => new ExpenseCategorializationUseCase(
-        this.container.resolve('ExpenseClassificationGateway'),
         this.container.resolve('CategoryRepository'),
         this.container.resolve(SERVICE_TOKENS.LOGGER.name)
       )
     );
 
-    // LLM Connection Test Use Case
+    // LLM Connection Test Use Case (no longer needs gateway injected)
     this.container.registerTransient(
       'LLMConnectionTestUseCase',
       () => new LLMConnectionTestUseCase(
-        this.container.resolve('LLMExtractionGateway'),
         this.container.resolve(SERVICE_TOKENS.LOGGER.name)
       )
     );

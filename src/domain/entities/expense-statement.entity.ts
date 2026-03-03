@@ -1,5 +1,6 @@
 import { StatementPeriod } from '../value-objects/statement-period.vo';
 import { Money } from '../value-objects/money.vo';
+import { ConfidenceScore } from '../value-objects/confidence-score.vo';
 import { Transaction } from './transaction.entity';
 import { Category } from './category.entity';
 
@@ -150,7 +151,9 @@ export class ExpenseStatement {
           '#6366F1' // Default color
         );
         
-        return baseTransaction.categorize(category, tx.confidence);
+        // Convert confidence number to ConfidenceScore value object
+        const confidenceScore = ConfidenceScore.create(tx.confidence);
+        return baseTransaction.categorize(category, confidenceScore);
       }
 
       return baseTransaction;
@@ -226,8 +229,10 @@ export class ExpenseStatement {
   private static calculateCategoryBreakdown(transactions: readonly Transaction[]): CategoryBreakdown {
     const breakdown: { [categoryName: string]: { total: number; count: number; currency: string; } } = {};
     
-    // Calculate totals by category
-    const categorizedTransactions = transactions.filter(tx => tx.isCategorized() && tx.isExpense());
+    // Calculate totals by category - include both expenses and discounts, exclude payments
+    const categorizedTransactions = transactions.filter(tx => 
+      tx.isCategorized() && (tx.isExpense() || tx.isDiscount())
+    );
     const totalAmount = categorizedTransactions.reduce((sum, tx) => sum + tx.amount.getValue(), 0);
 
     for (const transaction of categorizedTransactions) {

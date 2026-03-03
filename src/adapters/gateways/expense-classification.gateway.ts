@@ -267,7 +267,7 @@ export class ExpenseClassificationGateway implements IExpenseClassificationGatew
         extractData: async (prompt: string) => {
           const result = await this.llmExtractor.extractData({
             prompt: prompt,
-            text: ' ', // Minimal non-empty string since prompt contains everything needed
+            text: 'Classification request',
             format: 'json'
           });
           

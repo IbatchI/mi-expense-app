@@ -231,14 +231,14 @@ export class StatementPresenter {
       presented[categoryName] = {
         total: {
           amount: data.total.amount || data.total,
-          formatted: data.total.formatted || this.formatAmount(data.total),
+          formatted: data.total.formatted || this.formatAmount(data.total.amount || data.total),
           currency: data.total.currency || 'ARS'
         },
         count: data.count,
         percentage: data.percentage,
         averageAmount: {
           amount: data.averageAmount.amount || data.averageAmount,
-          formatted: data.averageAmount.formatted || this.formatAmount(data.averageAmount),
+          formatted: data.averageAmount.formatted || this.formatAmount(data.averageAmount.amount || data.averageAmount),
           currency: data.averageAmount.currency || 'ARS'
         },
         design: {
@@ -358,6 +358,18 @@ export class ProcessingResultPresenter {
     result: any,
     processingSteps: ProcessingStep[]
   ): PresentedProcessingResult {
+    // Present statement first if successful
+    let presentedStatement: PresentedStatement | undefined;
+    if (result.success && result.data?.statement) {
+      presentedStatement = StatementPresenter.present(result.data.statement);
+    }
+
+    // Extract categorization stats from the presented statement
+    const categorizedCount = presentedStatement?.analytics?.stats?.categorizedTransactions || 0;
+    const uncategorizedCount = presentedStatement?.analytics?.stats?.uncategorizedTransactions || 0;
+    const total = categorizedCount + uncategorizedCount;
+    const categorizationRate = total > 0 ? categorizedCount / total : 0;
+
     const response: PresentedProcessingResult = {
       success: result.success,
       processingDetails: {
@@ -375,24 +387,16 @@ export class ProcessingResultPresenter {
           confidence: result.data?.processingDetails?.extraction?.confidence || 0
         },
         categorization: {
-          categorizedCount: result.data?.processingDetails?.categorization?.categorizedTransactions || 0,
-          uncategorizedCount: result.data?.processingDetails?.categorization?.uncategorizedTransactions || 0,
-          categorizationRate: 0
+          categorizedCount,
+          uncategorizedCount,
+          categorizationRate
         }
       }
     };
 
-    // Calculate categorization rate
-    const total = response.processingDetails.categorization.categorizedCount + 
-                 response.processingDetails.categorization.uncategorizedCount;
-    if (total > 0) {
-      response.processingDetails.categorization.categorizationRate = 
-        response.processingDetails.categorization.categorizedCount / total;
-    }
-
-    // Add statement if successful
-    if (result.success && result.data?.statement) {
-      response.statement = StatementPresenter.present(result.data.statement);
+    // Add statement to response
+    if (presentedStatement) {
+      response.statement = presentedStatement;
     }
 
     // Add error if failed

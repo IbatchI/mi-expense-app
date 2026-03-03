@@ -5,7 +5,7 @@ import { Category } from './category.entity';
 /**
  * Transaction Types
  */
-export type TransactionType = 'purchase' | 'payment' | 'fee' | 'tax' | 'refund' | 'adjustment';
+export type TransactionType = 'purchase' | 'payment' | 'fee' | 'tax' | 'refund' | 'adjustment' | 'discount' | 'credit';
 
 /**
  * Transaction Domain Entity
@@ -207,7 +207,23 @@ export class Transaction {
     const desc = description.toLowerCase();
     
     if (amount.getValue() < 0) {
-      return 'payment';
+      // Distinguish between actual credit card payments and promotional discounts
+      if (desc.includes('pago') || desc.includes('payment') || 
+          desc.includes('debito') || desc.includes('debit') ||
+          desc.includes('transferencia') || desc.includes('transfer')) {
+        return 'payment';
+      }
+      
+      // Check for promotional/discount keywords
+      if (desc.includes('descuento') || desc.includes('discount') || 
+          desc.includes('promocion') || desc.includes('promo') ||
+          desc.includes('reintegro') || desc.includes('cashback') ||
+          desc.includes('bonificacion') || desc.includes('rebate')) {
+        return 'discount';
+      }
+      
+      // Default negative amounts to credit (to be categorized later)
+      return 'credit';
     }
     
     if (desc.includes('cuota') || desc.includes('fee') || desc.includes('comision')) {
@@ -218,7 +234,7 @@ export class Transaction {
       return 'tax';
     }
     
-    if (desc.includes('devolucion') || desc.includes('refund') || desc.includes('reintegro')) {
+    if (desc.includes('devolucion') || desc.includes('refund')) {
       return 'refund';
     }
     
@@ -332,14 +348,24 @@ export class Transaction {
    * Checks if the transaction is an expense (positive amount)
    */
   isExpense(): boolean {
-    return this._amount.getValue() > 0 && this._type !== 'payment' && this._type !== 'refund';
+    return this._amount.getValue() > 0 && 
+           this._type !== 'payment' && 
+           this._type !== 'refund';
   }
 
   /**
-   * Checks if the transaction is a payment (negative amount)
+   * Checks if the transaction is a payment (actual credit card payment to be excluded)
    */
   isPayment(): boolean {
-    return this._amount.getValue() < 0 || this._type === 'payment';
+    return this._type === 'payment';
+  }
+
+  /**
+   * Checks if the transaction is a discount/credit (negative amount to be categorized)
+   */
+  isDiscount(): boolean {
+    return this._type === 'discount' || this._type === 'credit' || 
+           (this._amount.getValue() < 0 && this._type !== 'payment');
   }
 
   /**

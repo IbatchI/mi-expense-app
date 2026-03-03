@@ -11,10 +11,6 @@ export class Money {
   ) {}
 
   public static create(amount: number, currency: Currency): Money {
-    if (amount < 0) {
-      throw new Error('Amount cannot be negative');
-    }
-
     if (!Number.isFinite(amount)) {
       throw new Error('Amount must be a finite number');
     }
@@ -66,25 +62,25 @@ export class Money {
     if (this._currency !== other._currency) {
       throw new Error(`Cannot add different currencies: ${this._currency} and ${other._currency}`);
     }
-    return Money.create(this._amount + other._amount, this._currency);
+    return new Money(this._amount + other._amount, this._currency);
   }
 
   public subtract(other: Money): Money {
     if (this._currency !== other._currency) {
       throw new Error(`Cannot subtract different currencies: ${this._currency} and ${other._currency}`);
     }
-    return Money.create(this._amount - other._amount, this._currency);
+    return new Money(this._amount - other._amount, this._currency);
   }
 
   public multiply(factor: number): Money {
-    return Money.create(this._amount * factor, this._currency);
+    return new Money(this._amount * factor, this._currency);
   }
 
   public divide(divisor: number): Money {
     if (divisor === 0) {
       throw new Error('Cannot divide by zero');
     }
-    return Money.create(this._amount / divisor, this._currency);
+    return new Money(this._amount / divisor, this._currency);
   }
 
   // Comparisons
