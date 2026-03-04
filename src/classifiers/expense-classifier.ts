@@ -191,17 +191,18 @@ export class ExpenseClassifier {
 
 Analyze these credit card transactions and classify each one into ONE of these categories:
 
-AVAILABLE CATEGORIES (choose ONE per transaction):
-🏠 Hogar - Home services (rent, utilities: electricity, gas, water, internet)
-🍔 Alimentación - Food and drinks (supermarkets, restaurants, delivery)  
-🚗 Transporte - Transportation (fuel, public transport, taxis, car maintenance)
-🎉 Ocio y Entretenimiento - Entertainment (streaming, cinema, events, games)
-🏥 Salud - Health and medicine (pharmacies, medical consultations, health insurance)
-👕 Compras Personales - Personal items (clothing, technology, accessories)
-📚 Educación - Education (courses, books, educational subscriptions)
-🐶 Mascotas - Pets (pet food, veterinary)
-💼 Trabajo / Negocio - Work/Business tools (software, equipment)
-🧾 Sin Categoría - Use ONLY when you cannot determine category with confidence
+AVAILABLE CATEGORIES (choose the exact name without emoji):
+Hogar - Home services (rent, utilities: electricity, gas, water, internet)
+Alimentación - Food and drinks (supermarkets, restaurants, delivery)  
+Transporte - Transportation (fuel, public transport, taxis, car maintenance)
+Ocio y Entretenimiento - Entertainment (streaming, cinema, events, games)
+Salud - Health and medicine (pharmacies, medical consultations, health insurance)
+Compras Personales - Personal items (clothing, technology, accessories)
+Educación - Education (courses, books, educational subscriptions)
+Mascotas - Pets (pet food, veterinary)
+Trabajo / Negocio - Work/Business tools (software, equipment)
+Descuentos - Discounts, promotions, cashbacks, rebates
+Sin Categoría - Use ONLY when you cannot determine category with confidence
 
 CLASSIFICATION RULES:
 - SUPERMERCADO/MERCADO → Alimentación (#supermercado)
@@ -216,14 +217,17 @@ CLASSIFICATION RULES:
 TRANSACTIONS TO CLASSIFY:
 ${transactionList}
 
-IMPORTANT: Respond ONLY with valid JSON, no additional text:
+IMPORTANT: 
+- Use the exact category name WITHOUT emojis (e.g., "Alimentación", NOT "🍔 Alimentación")
+- Respond ONLY with valid JSON, no additional text:
+
 {
   "classifications": [
     {
       "index": 1,
       "description": "exact_original_description",
-      "category": "category_name", 
-      "tags": ["#main_tag"],
+      "category": "Alimentación", 
+      "tags": ["#supermercado"],
       "confidence": 0.85
     }
   ]
@@ -253,17 +257,28 @@ IMPORTANT: Respond ONLY with valid JSON, no additional text:
         !parsedResponse.classifications ||
         !Array.isArray(parsedResponse.classifications)
       ) {
+        console.error("   ❌ Invalid response format: missing classifications array");
+        console.error("   📄 Available fields in response:", Object.keys(parsedResponse));
         throw new Error(
           "Invalid response format: missing classifications array",
         );
       }
 
-      return parsedResponse.classifications.filter((classification: any) =>
-        this.validateClassification(classification),
-      );
+      // Validate each classification and log results
+      const validClassifications = parsedResponse.classifications.filter((classification: any, index: number) => {
+        const isValid = this.validateClassification(classification);
+        if (!isValid) {
+          console.log(`   ⚠️  Classification ${index + 1} failed validation - Category: '${classification.category}' (expected no emojis)`);
+        }
+        return isValid;
+      });
+
+      console.log(`   🔍 Valid classifications: ${validClassifications.length}/${parsedResponse.classifications.length}`);
+
+      return validClassifications;
     } catch (error) {
       console.error("   ❌ Failed to parse classification response:", error);
-      console.error("   📄 Raw response:", response);
+      console.error("   📄 Raw response:", typeof response === 'string' ? response.substring(0, 200) + '...' : JSON.stringify(response, null, 2).substring(0, 200) + '...');
       throw new Error(
         `Failed to parse LLM classification response: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
@@ -386,8 +401,9 @@ IMPORTANT: Respond ONLY with valid JSON, no additional text:
       }
     }
 
-    // Validate category exists
-    if (!Object.keys(this.CATEGORIES).includes(classification.category)) {
+    // Validate category exists (without emojis)
+    const availableCategories = Object.keys(this.CATEGORIES);
+    if (!availableCategories.includes(classification.category)) {
       return false;
     }
 

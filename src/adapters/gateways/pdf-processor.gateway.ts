@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export class PDFProcessorGateway implements IPDFProcessorGateway {
-  async parseFile(filePath: string): Promise<GatewayResult<PDFParseResult>> {
+  async parseFile(filePath: string, pageLimit?: number): Promise<GatewayResult<PDFParseResult>> {
     const startTime = Date.now();
 
     try {
@@ -24,7 +24,7 @@ export class PDFProcessorGateway implements IPDFProcessorGateway {
 
       // Read file buffer
       const pdfBuffer = fs.readFileSync(filePath);
-      return await this.parseBuffer(pdfBuffer);
+      return await this.parseBuffer(pdfBuffer, pageLimit);
 
     } catch (error) {
       return {
@@ -35,7 +35,7 @@ export class PDFProcessorGateway implements IPDFProcessorGateway {
     }
   }
 
-  async parseBuffer(buffer: Buffer): Promise<GatewayResult<PDFParseResult>> {
+  async parseBuffer(buffer: Buffer, pageLimit?: number): Promise<GatewayResult<PDFParseResult>> {
     const startTime = Date.now();
 
     try {
@@ -48,13 +48,14 @@ export class PDFProcessorGateway implements IPDFProcessorGateway {
         };
       }
 
-      // Parse PDF using pdf-parse library
+      // Parse PDF using pdf-parse library with optional page limit
       const pdf = require('pdf-parse');
-      const pdfData = await pdf(buffer);
+      const pdfOptions = pageLimit ? { max: pageLimit } : {};
+      const pdfData = await pdf(buffer, pdfOptions);
 
       // 🔍 DEBUG: Dump raw PDF data if enabled
       if (true) {
-        await this.dumpRawPDFData(pdfData, buffer);
+        await this.dumpRawPDFData(pdfData, buffer, pageLimit);
       }
 
       const result: PDFParseResult = {
@@ -129,7 +130,7 @@ export class PDFProcessorGateway implements IPDFProcessorGateway {
   /**
    * 🔍 DEBUG: Dump raw PDF data for analysis
    */
-  private async dumpRawPDFData(pdfData: any, buffer: Buffer): Promise<void> {
+  private async dumpRawPDFData(pdfData: any, buffer: Buffer, pageLimit?: number): Promise<void> {
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const outputDir = path.join(process.cwd(), 'output', 'debug');
@@ -186,6 +187,10 @@ PDF Header: ${buffer.subarray(0, 16).toString('ascii', 0, 16)}
       console.log(`   🔢 Hex dump: ${path.basename(hexFile)}`);
       console.log(`   📝 Text length: ${pdfData.text.length} chars, ${pdfData.numpages} pages`);
       console.log(`   ⚠️  Control chars: ${(pdfData.text.match(/[\x00-\x1F\x7F-\x9F]/g) || []).length}`);
+      
+      if (pageLimit) {
+        console.log(`   📄 Page limit applied: Processing only first ${pageLimit} pages of ${pdfData.numpages}`);
+      }
 
     } catch (error) {
       console.error('❌ Failed to dump PDF debug data:', error);

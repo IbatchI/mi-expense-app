@@ -41,8 +41,8 @@ export interface PDFParseResult {
 }
 
 export interface IPDFProcessorGateway {
-  parseFile(filePath: string): Promise<GatewayResult<PDFParseResult>>;
-  parseBuffer(buffer: Buffer): Promise<GatewayResult<PDFParseResult>>;
+  parseFile(filePath: string, pageLimit?: number): Promise<GatewayResult<PDFParseResult>>;
+  parseBuffer(buffer: Buffer, pageLimit?: number): Promise<GatewayResult<PDFParseResult>>;
   extractMetadata(filePath: string): Promise<GatewayResult<any>>;
 }
 

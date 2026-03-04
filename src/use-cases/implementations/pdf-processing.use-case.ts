@@ -38,11 +38,19 @@ export class PDFProcessingUseCase implements IPDFProcessingUseCase {
 
       this.logger.debug('Starting PDF text extraction', {
         bufferSize: request.pdfBuffer.length,
-        bankType: request.bankType
+        bankType: request.bankType,
+        pageLimit: request.pageLimit
       });
 
+      // Determine page limit based on bank type
+      let pageLimit = request.pageLimit;
+      if (!pageLimit && request.bankType === 'galicia') {
+        pageLimit = 3; // Galicia: Only process first 3 pages (useful content)
+        this.logger.info('Applied Galicia page limit', { pageLimit });
+      }
+
       // Extract raw text from PDF
-      const pdfResult = await this.pdfProcessorGateway.parseBuffer(request.pdfBuffer);
+      const pdfResult = await this.pdfProcessorGateway.parseBuffer(request.pdfBuffer, pageLimit);
 
       if (!pdfResult.success || !pdfResult.data) {
         return {

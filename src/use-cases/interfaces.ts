@@ -38,6 +38,7 @@ export interface BankDetectionResult {
 export interface PDFExtractionRequest {
   pdfBuffer: Buffer;
   bankType: string;
+  pageLimit?: number;
 }
 
 export interface PDFExtractionResult {

@@ -102,13 +102,11 @@ export class LLMExtractionGateway implements ILLMExtractionGateway {
       // Create a temporary extractor instance for testing
       const testExtractor = this.createExtractor(config);
 
-      // Test with a simple prompt
-      const testResult = await testExtractor.extractData(
-        "Test connection. Respond with: {'status': 'connected'}",
-      );
+      // Use the dedicated testConnection method instead of extractData
+      // This avoids the "Extraction Summary" logs which are confusing during connection tests
+      const testResult = await testExtractor.testConnection();
 
-      // Check if we got any response
-      return testResult !== null && testResult !== undefined;
+      return testResult;
     } catch (error) {
       return false;
     }

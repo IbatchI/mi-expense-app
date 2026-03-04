@@ -9,31 +9,35 @@ You will receive PREPROCESSED text that has been cleaned and organized from a Ba
 
 Please extract the following information and return it as a JSON object:
 
-REQUIRED FIELDS:
+REQUIRED FIELDS (these names must match exactly):
 - statementNumber: Statement number (format: VI followed by numbers)
 - cardType: Always "VISA" for these statements  
 - bank: Always "Banco Galicia"
-- cardholderName: Full name of the cardholder
+- holder: Full name of the cardholder (changed from cardholderName for consistency)
 - accountNumber: Account number
+- period: Object with these EXACT subfields:
+  - previousClosing: Previous closing date in YYYY-MM-DD format
+  - previousDueDate: Previous due date in YYYY-MM-DD format  
+  - currentClosing: Current statement date in YYYY-MM-DD format
+  - currentDueDate: Payment due date in YYYY-MM-DD format
+- totals: Object with these EXACT subfields:
+  - pesos: Total amount in Argentine Pesos
+  - dollars: Total amount in US Dollars (if any, use 0 if none)
+  - minimumPayment: Minimum payment required
+- transactions: Array of transaction objects
+- fees: Array of fees and taxes
 - branch: Branch number
 - address: Complete address
-- statementDate: Date in YYYY-MM-DD format
-- dueDate: Payment due date in YYYY-MM-DD format
-- totalAmountPesos: Total amount in Argentine Pesos
-- totalAmountUSD: Total amount in US Dollars (if any)
-- minimumPayment: Minimum payment required
 - previousBalance: Previous statement balance
 - currentBalance: Current statement balance
 - availableCredit: Available credit limit
-- transactions: Array of transaction objects
-- fees: Array of fees and taxes
 
 TRANSACTION OBJECT FORMAT:
 {
   "date": "YYYY-MM-DD",
-  "description": "Merchant name (cleaned)",
-  "amount": number,
-  "currency": "ARS" or "USD",
+  "merchant": "Merchant name (cleaned)",
+  "amountPesos": number,
+  "amountUSD": number,
   "installments": "XX/YY" (if applicable),
   "reference": "Reference number",
   "type": "purchase" | "payment" | "fee" | "credit" | "discount" | "tax"
@@ -47,12 +51,15 @@ REAL EXAMPLES FROM GALICIA STATEMENTS:
 - Reference numbers: 6-digit codes like "007897", "956190"
 
 IMPORTANT PARSING RULES:
-1. Clean merchant names by removing asterisks and normalizing format
-2. Parse installment information (XX/YY format) into separate field
+1. Clean merchant names by removing asterisks (*) and normalizing format
+2. Parse installment information (XX/YY format) into separate field  
 3. Separate taxes/fees from regular purchases
 4. Handle both ARS and USD currencies correctly
 5. Extract all reference numbers accurately
 6. Convert dates to ISO format (YYYY-MM-DD)
+7. For ARS transactions, set amountPesos to the transaction amount and amountUSD to 0.00
+8. For USD transactions, set amountUSD to the transaction amount and amountPesos to 0.00
+9. Ensure ALL transactions have both merchant and amount fields populated
 
 Return only valid JSON without any markdown formatting or additional text.
 
@@ -61,21 +68,25 @@ Example response structure:
   "statementNumber": "VI00000000062132419",
   "cardType": "VISA",
   "bank": "Banco Galicia",
-  "cardholderName": "LUCAS MATEO HERNANDEZ",
+  "holder": "LUCAS MATEO HERNANDEZ",
   "accountNumber": "1181500877", 
-  "branch": "123",
-  "address": "CALLE 30 1086, GENERAL PICO, L6360EGV",
-  "statementDate": "2026-02-19",
-  "dueDate": "2026-03-19",
-  "totalAmountPesos": 482.15,
-  "totalAmountUSD": -0.01,
-  "minimumPayment": 35590.00,
+  "period": {
+    "previousClosing": "2026-01-19",
+    "previousDueDate": "2026-02-19", 
+    "currentClosing": "2026-02-19",
+    "currentDueDate": "2026-03-19"
+  },
+  "totals": {
+    "pesos": 482149.89,
+    "dollars": 0.01,
+    "minimumPayment": 35590.00
+  },
   "transactions": [
     {
       "date": "2025-11-17",
-      "description": "Juleriaque.com.ar",
-      "amount": 25000.00,
-      "currency": "ARS",
+      "merchant": "Juleriaque.com.ar",
+      "amountPesos": 25000.00,
+      "amountUSD": 0.00,
       "installments": "04/06",
       "reference": "007897",
       "type": "purchase"
@@ -84,12 +95,17 @@ Example response structure:
   "fees": [
     {
       "date": "2026-02-19",
-      "description": "IIBB Perception",
-      "amount": 32.10,
-      "currency": "ARS",
+      "merchant": "IIBB Perception",
+      "amountPesos": 32.10,
+      "amountUSD": 0.00,
       "type": "tax"
     }
-  ]
+  ],
+  "branch": "123",
+  "address": "CALLE 30 1086, GENERAL PICO, L6360EGV",
+  "previousBalance": 450000.00,
+  "currentBalance": 482149.89,
+  "availableCredit": 4017850.11
 }`;
 
 /**
