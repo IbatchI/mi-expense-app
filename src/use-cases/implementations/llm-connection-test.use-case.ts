@@ -31,25 +31,23 @@ export class LLMConnectionTestUseCase implements ILLMConnectionTestUseCase {
       // Create a gateway instance for this specific request
       const gateway = LLMGatewayFactory.createFromExtractorConfig(extractorConfig);
 
-      // Test connection with a simple prompt
-      const testResult = await gateway.extractData({
-        prompt: "Test connection. Respond with a simple JSON object containing 'status': 'ok'",
-        text: "This is a test",
-        format: 'json'
+      // Use the dedicated testConnection method to avoid spurious "Extraction Summary" logs
+      const connected = await gateway.testConnection({
+        provider: extractorConfig.provider,
+        apiKey: extractorConfig.apiKey,
+        ...(extractorConfig.model ? { model: extractorConfig.model } : {})
       });
 
-      if (!testResult.success) {
+      if (!connected) {
         this.logger.error('LLM connection test failed', {
-          provider: extractorConfig.provider,
-          error: testResult.error
+          provider: extractorConfig.provider
         });
         return false;
       }
 
       this.logger.info('LLM connection test successful', {
         provider: extractorConfig.provider,
-        model: testResult.data?.modelUsed || extractorConfig.model,
-        responseTime: testResult.metadata?.processingTime
+        model: extractorConfig.model
       });
 
       return true;
