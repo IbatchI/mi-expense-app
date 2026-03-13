@@ -239,8 +239,14 @@ export class CategoryManagementService {
       {
         name: "Ocio y Entretenimiento",
         englishName: "Entertainment",
-        tags: ["#salidas", "#streaming", "#cine", "#eventos", "#juegos", "#entretenimiento"],
+        tags: ["#salidas", "#streaming", "#cine", "#eventos", "#juegos", "#entretenimiento", "#juguetes", "#infantil"],
         description: "Entretenimiento y recreación"
+      },
+      {
+        name: "Viajes",
+        englishName: "Travel",
+        tags: ["#viajes", "#hotel", "#vuelo", "#excursion", "#turismo", "#alojamiento", "#tour", "#transporte_largo", "#parques_nacionales", "#aventura"],
+        description: "Viajes, alojamiento, vuelos, excursiones y turismo"
       },
       {
         name: "Salud",
@@ -249,10 +255,22 @@ export class CategoryManagementService {
         description: "Gastos médicos y de salud"
       },
       {
+        name: "Belleza y Cuidado Personal",
+        englishName: "Beauty & Personal Care",
+        tags: ["#perfumeria", "#cosmetica", "#peluqueria", "#maquillaje", "#estetica", "#spa", "#cuidado_personal"],
+        description: "Perfumerías, cosméticos, peluquerías y cuidado personal"
+      },
+      {
+        name: "Indumentaria",
+        englishName: "Clothing",
+        tags: ["#ropa", "#calzado", "#accesorios_moda", "#indumentaria", "#moda", "#vestimenta"],
+        description: "Ropa, calzado y accesorios de moda"
+      },
+      {
         name: "Compras Personales",
         englishName: "Personal Shopping",
-        tags: ["#ropa", "#tecnologia", "#accesorios", "#compras", "#shopping"],
-        description: "Compras personales y ropa"
+        tags: ["#tecnologia", "#electronica", "#hogar_deco", "#accesorios", "#compras", "#shopping"],
+        description: "Electrónica, artículos para el hogar y compras generales"
       },
       {
         name: "Educación",

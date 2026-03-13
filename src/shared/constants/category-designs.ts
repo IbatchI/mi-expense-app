@@ -5,81 +5,94 @@
 
 export interface CategoryDesign {
   icon: string;
-  color: string;        // Primary color for charts/buttons
-  lightColor: string;   // Background color for cards
-  textColor: string;    // Text color on primary background
+  color: string; // Primary color for charts/buttons
+  lightColor: string; // Background color for cards
+  textColor: string; // Text color on primary background
 }
 
 export const CATEGORY_DESIGNS: Record<string, CategoryDesign> = {
-  "Alimentación": {
+  Alimentación: {
     icon: "🍔",
     color: "#FF6B6B",
     lightColor: "#FFE5E5",
-    textColor: "#FFFFFF"
+    textColor: "#FFFFFF",
   },
-  "Transporte": {
-    icon: "🚗",
+  Viajes: {
+    icon: "✈️",
     color: "#4ECDC4",
     lightColor: "#E5F9F6",
-    textColor: "#FFFFFF"
+    textColor: "#FFFFFF",
   },
   "Ocio y Entretenimiento": {
     icon: "🎮",
     color: "#45B7D1",
     lightColor: "#E5F3FF",
-    textColor: "#FFFFFF"
+    textColor: "#FFFFFF",
   },
-  "Salud": {
+  Salud: {
     icon: "💊",
     color: "#96CEB4",
     lightColor: "#F0F9F4",
-    textColor: "#FFFFFF"
+    textColor: "#FFFFFF",
   },
   "Compras Personales": {
     icon: "🛍️",
     color: "#FFEAA7",
     lightColor: "#FFFBEF",
-    textColor: "#2D3436"
+    textColor: "#2D3436",
   },
-  "Hogar": {
+  Indumentaria: {
+    icon: "👕",
+    color: "#FFEAA7",
+    lightColor: "#FFFBEF",
+    textColor: "#2D3436",
+  },
+  "Belleza y Cuidado Personal": {
+    icon: "💄",
+    color: "#FD79A8",
+    lightColor: "#FFF0F6",
+    textColor: "#FFFFFF",
+  },
+  Hogar: {
     icon: "🏠",
     color: "#DDA0DD",
     lightColor: "#F5F0F5",
-    textColor: "#FFFFFF"
+    textColor: "#FFFFFF",
   },
-  "Educación": {
+  Educación: {
     icon: "📚",
     color: "#74B9FF",
     lightColor: "#EBF4FF",
-    textColor: "#FFFFFF"
+    textColor: "#FFFFFF",
   },
-  "Mascotas": {
+  Mascotas: {
     icon: "🐕",
     color: "#FD79A8",
     lightColor: "#FFF0F6",
-    textColor: "#FFFFFF"
+    textColor: "#FFFFFF",
   },
   "Trabajo / Negocio": {
     icon: "💼",
     color: "#6C5CE7",
     lightColor: "#F0EFFF",
-    textColor: "#FFFFFF"
+    textColor: "#FFFFFF",
   },
-  "Descuentos": {
+  Descuentos: {
     icon: "💸",
     color: "#00B894",
     lightColor: "#E8F7F1",
-    textColor: "#FFFFFF"
+    textColor: "#FFFFFF",
   },
   "Sin Categoría": {
     icon: "❓",
     color: "#636E72",
     lightColor: "#F8F9FA",
-    textColor: "#FFFFFF"
-  }
+    textColor: "#FFFFFF",
+  },
 };
 
-export const DEFAULT_CATEGORY_DESIGN: CategoryDesign = CATEGORY_DESIGNS["Sin Categoría"];
+export const DEFAULT_CATEGORY_DESIGN: CategoryDesign =
+  CATEGORY_DESIGNS["Sin Categoría"];
 
 export function getCategoryDesign(categoryName: string): CategoryDesign {
   return CATEGORY_DESIGNS[categoryName] || DEFAULT_CATEGORY_DESIGN;

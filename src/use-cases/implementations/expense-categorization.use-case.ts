@@ -205,8 +205,13 @@ export class ExpenseCategorializationUseCase implements IExpenseCategorializatio
       },
       {
         name: "Ocio y Entretenimiento",
-        tags: ["#salidas", "#streaming", "#cine", "#eventos", "#juegos"],
+        tags: ["#salidas", "#streaming", "#cine", "#eventos", "#juegos", "#juguetes", "#infantil"],
         description: "Entretenimiento y recreación"
+      },
+      {
+        name: "Viajes",
+        tags: ["#viajes", "#hotel", "#vuelo", "#excursion", "#turismo", "#alojamiento", "#tour", "#transporte_largo", "#parques_nacionales", "#aventura"],
+        description: "Viajes, alojamiento, vuelos, excursiones y turismo"
       },
       {
         name: "Salud",
@@ -214,9 +219,19 @@ export class ExpenseCategorializationUseCase implements IExpenseCategorializatio
         description: "Gastos médicos y de salud"
       },
       {
+        name: "Belleza y Cuidado Personal",
+        tags: ["#perfumeria", "#cosmetica", "#peluqueria", "#maquillaje", "#estetica", "#spa", "#cuidado_personal"],
+        description: "Perfumerías, cosméticos, peluquerías y cuidado personal"
+      },
+      {
+        name: "Indumentaria",
+        tags: ["#ropa", "#calzado", "#accesorios_moda", "#indumentaria", "#moda", "#vestimenta"],
+        description: "Ropa, calzado y accesorios de moda"
+      },
+      {
         name: "Compras Personales",
-        tags: ["#ropa", "#tecnologia", "#accesorios"],
-        description: "Compras personales y ropa"
+        tags: ["#tecnologia", "#electronica", "#hogar_deco", "#accesorios"],
+        description: "Electrónica, artículos para el hogar y compras generales"
       },
       {
         name: "Educación",
