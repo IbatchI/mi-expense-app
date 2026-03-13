@@ -428,8 +428,8 @@ export class ExpenseStatement {
       expenseTransactions: expenseTransactions.length,
       categorizedTransactions: categorizedTransactions.length,
       uncategorizedTransactions: uncategorizedTransactions.length,
-      categorizationPercentage: expenseTransactions.length > 0 
-        ? (categorizedTransactions.length / expenseTransactions.length) * 100 
+      categorizationPercentage: this._transactions.length > 0
+        ? (categorizedTransactions.length / this._transactions.length) * 100
         : 0,
       totalCategories: this._categoryBreakdown ? Object.keys(this._categoryBreakdown).length : 0
     };
