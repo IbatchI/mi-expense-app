@@ -96,9 +96,15 @@ export class ExpenseCategorializationUseCase implements IExpenseCategorializatio
         categoryNames: categories.map(c => c.name)
       });
 
+      // Exclude payment transactions before classification — they are credit card payments,
+      // not expenses, and should not appear in the response at all.
+      const transactionsToClassify = request.statementData.transactions.filter(
+        (tx: any) => tx.type !== 'payment'
+      );
+
       // Classify expenses using the gateway
       const classificationResult = await expenseClassificationGateway.classifyExpenses({
-        transactions: request.statementData.transactions,
+        transactions: transactionsToClassify,
         categories: categories,
         options: {
           confidenceThreshold: 0.3, // Lower threshold for Spanish categories
@@ -143,7 +149,7 @@ export class ExpenseCategorializationUseCase implements IExpenseCategorializatio
         categoryBreakdown: categoryBreakdown,
         classificationMetadata: {
           processingTime: Date.now() - startTime,
-          totalTransactions: request.statementData.transactions.length,
+          totalTransactions: transactionsToClassify.length,
           categorizedTransactions: enhancedTransactions.length,
           uncategorizedTransactions: classifiedData.uncategorizedTransactions.length,
           provider: request.extractorConfig.provider,
@@ -168,7 +174,9 @@ export class ExpenseCategorializationUseCase implements IExpenseCategorializatio
           processingTime: Date.now() - startTime,
           categorizedCount: enhancedTransactions.length,
           uncategorizedCount: classifiedData.uncategorizedTransactions.length,
-          categorizationRate: enhancedTransactions.length / request.statementData.transactions.length
+          categorizationRate: transactionsToClassify.length > 0
+            ? enhancedTransactions.length / transactionsToClassify.length
+            : 0
         }
       };
 

@@ -166,9 +166,9 @@ export class CompleteFileProcessingUseCase implements ICompleteFileProcessingUse
       let statement: ExpenseStatement;
       try {
         if (finalData.categoryBreakdown) {
-          statement = ExpenseStatement.fromCategorizedStatement(finalData);
+          statement = ExpenseStatement.fromCategorizedStatement(finalData, pdfResult.data.rawText);
         } else {
-          statement = ExpenseStatement.fromCreditCardStatement(finalData);
+          statement = ExpenseStatement.fromCreditCardStatement(finalData, pdfResult.data.rawText);
         }
       } catch (error) {
         return {
