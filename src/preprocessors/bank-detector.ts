@@ -86,52 +86,76 @@ export class BankDetector {
 
   /**
    * Detect Banco Pampa specific patterns
-   * Based on real PDF analysis of visa-pampa.pdf
+   * Supports both VISA and MasterCard formats from Banco de la Pampa
    */
   private detectPampa(text: string): BankDetectionResult {
     const indicators: string[] = [];
     let score = 0;
 
-    // Primary identifier: CUIT Banco Pampa (HIGHEST CONFIDENCE)
+    // --- VISA patterns ---
+
+    // Primary identifier: CUIT of the cardholder (VISA statements include it)
     if (text.includes('20-39385184-9')) {
       indicators.push('Pampa CUIT found (20-39385184-9)');
-      score += 0.9; // Very high confidence
+      score += 0.9;
     }
 
-    // Secondary identifier: Bank name
-    if (text.includes('BANCO DE LA PAMPA')) {
-      indicators.push('Banco de la Pampa name found');
-      score += 0.8;
-    }
-
-    // Pampa-specific card type
+    // Pampa-specific card type (VISA)
     if (text.includes('VISA GOLD')) {
       indicators.push('VISA GOLD card type');
       score += 0.3;
     }
 
-    // Pampa-specific package
+    // Pampa-specific package (VISA)
     if (text.includes('PAQUETE DORADO')) {
       indicators.push('Paquete Dorado found');
       score += 0.2;
     }
 
-    // Pampa statement number format (13 digits - GOLD)
+    // Pampa statement number format (13 digits - GOLD, VISA)
     if (text.match(/\d{13} - GOLD/)) {
       indicators.push('Pampa GOLD statement format');
       score += 0.2;
     }
 
-    // Pampa-specific phone number
+    // Pampa customer service phone (VISA)
     if (text.includes('0810-222-CUOTAS') || text.includes('0810-222-CUOTA')) {
       indicators.push('Pampa customer service number');
       score += 0.1;
     }
 
-    // Pampa sucursal format: "200 - (0200) GRAL PICO"
+    // Pampa sucursal format: "200 - (0200) GRAL PICO" (VISA)
     if (text.match(/\d+ - \(\d+\) [A-Z\s]+/)) {
       indicators.push('Pampa sucursal format');
       score += 0.1;
+    }
+
+    // --- MasterCard patterns ---
+
+    // MasterCard Pampa: CUIT of the issuing entity (highest confidence for MC)
+    if (text.includes('CUIT Entidad 30-99907583-1')) {
+      indicators.push('Pampa MC entity CUIT found (30-99907583-1)');
+      score += 0.9;
+    }
+
+    // MasterCard Pampa: Gold Line exclusive phone number
+    if (text.includes('0800-222-3485')) {
+      indicators.push('Pampa Gold Line phone found (0800-222-3485)');
+      score += 0.4;
+    }
+
+    // MasterCard Pampa: account number format "Nº de Socio: 139-XXXXXXX"
+    if (text.match(/N[°º]\s+de\s+Socio:\s*139-\d/)) {
+      indicators.push('Pampa MC account number format (139-...)');
+      score += 0.5;
+    }
+
+    // --- Shared patterns (VISA + MC) ---
+
+    // Bank full name (appears in MC legal text and some VISA footers)
+    if (text.includes('BANCO DE LA PAMPA')) {
+      indicators.push('Banco de la Pampa full name found');
+      score += 0.8;
     }
 
     return {

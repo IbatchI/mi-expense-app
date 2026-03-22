@@ -46,12 +46,15 @@ export interface ProcessingMetadata {
  * Represents a complete credit card statement with transactions, categorization,
  * and business rules for expense analysis and financial management.
  */
+export type CardNetworkType = 'visa' | 'mc';
+
 export class ExpenseStatement {
   private constructor(
     private readonly _id: string,
     private readonly _holder: string,
     private readonly _accountNumber: string,
     private readonly _bank: string,
+    private readonly _cardType: CardNetworkType,
     private readonly _period: StatementPeriod,
     private readonly _totals: StatementTotals,
     private readonly _transactions: readonly Transaction[],
@@ -69,6 +72,7 @@ export class ExpenseStatement {
     holder: string;
     accountNumber: string;
     bank: string;
+    cardType: CardNetworkType;
     period: StatementPeriod;
     totals: StatementTotals;
     transactions: Transaction[];
@@ -80,6 +84,7 @@ export class ExpenseStatement {
       params.holder,
       params.accountNumber,
       params.bank,
+      params.cardType,
       params.period,
       params.totals,
       [...params.transactions],
@@ -89,9 +94,53 @@ export class ExpenseStatement {
   }
 
   /**
+   * Normalizes a raw card type string to 'visa' | 'mc'.
+   * Falls back to text-based detection using the PDF raw text if provided.
+   */
+  private static normalizeCardType(rawCardType: string | undefined, pdfText?: string): CardNetworkType {
+    const normalize = (value: string): CardNetworkType | null => {
+      const lower = value.toLowerCase();
+      if (lower.includes('visa')) return 'visa';
+      if (lower.includes('mastercard') || lower.includes('master card') || lower === 'mc') return 'mc';
+      return null;
+    };
+
+    if (rawCardType) {
+      const fromRaw = normalize(rawCardType);
+      if (fromRaw) return fromRaw;
+    }
+
+    if (pdfText) {
+      // Galicia VISA: statement numbers begin with "VI"
+      if (/Resumen\s+N[°º]\s+VI\d+/i.test(pdfText)) return 'visa';
+      // Galicia Mastercard: statement numbers begin with "MC"
+      if (/Resumen\s+N[°º]\s+MC\d+/i.test(pdfText)) return 'mc';
+      // Generic keyword fallback
+      const fromText = normalize(pdfText.slice(0, 2000));
+      if (fromText) return fromText;
+    }
+
+    // Default to visa — most common for supported banks
+    return 'visa';
+  }
+
+  /**
    * Creates an ExpenseStatement from the existing CreditCardStatement format
    */
-  static fromCreditCardStatement(statement: any): ExpenseStatement {
+  static fromCreditCardStatement(statement: any, pdfText?: string): ExpenseStatement {
+    if (!statement.period) {
+      throw new Error(
+        `Cannot create statement: period data is missing for bank "${statement.bank || 'unknown'}". ` +
+        `This usually means bank detection failed or the LLM did not extract the closing/due dates correctly.`
+      );
+    }
+    if (!statement.totals) {
+      throw new Error(
+        `Cannot create statement: totals data is missing for bank "${statement.bank || 'unknown'}". ` +
+        `This usually means the LLM did not extract the balance or minimum payment correctly.`
+      );
+    }
+
     const id = this.generateStatementId(statement.bank, statement.accountNumber, statement.period.currentClosing);
     
     // Convert period
@@ -112,11 +161,14 @@ export class ExpenseStatement {
     // Convert transactions based on bank format
     const transactions = this.convertTransactions(statement.transactions, statement.bank);
 
+    const cardType = this.normalizeCardType(statement.cardType, pdfText);
+
     return new ExpenseStatement(
       id,
       statement.holder,
       statement.accountNumber,
       statement.bank,
+      cardType,
       period,
       totals,
       transactions
@@ -126,8 +178,8 @@ export class ExpenseStatement {
   /**
    * Creates an ExpenseStatement with categorized transactions
    */
-  static fromCategorizedStatement(statement: any): ExpenseStatement {
-    const baseStatement = this.fromCreditCardStatement(statement);
+  static fromCategorizedStatement(statement: any, pdfText?: string): ExpenseStatement {
+    const baseStatement = this.fromCreditCardStatement(statement, pdfText);
     
     // Process categorized transactions
     const categorizedTransactions = statement.transactions.map((tx: any) => {
@@ -180,6 +232,7 @@ export class ExpenseStatement {
       baseStatement._holder,
       baseStatement._accountNumber,
       baseStatement._bank,
+      baseStatement._cardType,
       baseStatement._period,
       baseStatement._totals,
       categorizedTransactions,
@@ -320,6 +373,10 @@ export class ExpenseStatement {
     return this._bank;
   }
 
+  get cardType(): CardNetworkType {
+    return this._cardType;
+  }
+
   get period(): StatementPeriod {
     return this._period;
   }
@@ -428,8 +485,8 @@ export class ExpenseStatement {
       expenseTransactions: expenseTransactions.length,
       categorizedTransactions: categorizedTransactions.length,
       uncategorizedTransactions: uncategorizedTransactions.length,
-      categorizationPercentage: this._transactions.length > 0
-        ? (categorizedTransactions.length / this._transactions.length) * 100
+      categorizationPercentage: expenseTransactions.length > 0
+        ? (categorizedTransactions.filter(t => t.isExpense()).length / expenseTransactions.length) * 100
         : 0,
       totalCategories: this._categoryBreakdown ? Object.keys(this._categoryBreakdown).length : 0
     };
@@ -457,6 +514,7 @@ export class ExpenseStatement {
     holder: string;
     accountNumber: string;
     bank: string;
+    cardType: CardNetworkType;
     period: {
       previousClosing: string;
       previousDueDate: string;
@@ -519,6 +577,7 @@ export class ExpenseStatement {
       holder: string;
       accountNumber: string;
       bank: string;
+      cardType: CardNetworkType;
       period: {
         previousClosing: string;
         previousDueDate: string;
@@ -556,6 +615,7 @@ export class ExpenseStatement {
       holder: this._holder,
       accountNumber: this._accountNumber,
       bank: this._bank,
+      cardType: this._cardType,
       period: {
         ...periodDates,
         periodLength: this._period.getPeriodLength(),

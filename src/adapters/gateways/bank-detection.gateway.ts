@@ -31,12 +31,19 @@ export class BankDetectionGateway implements IBankDetectionGateway {
     {
       bank: 'pampa',
       patterns: [
+        // Shared patterns
+        'BANCO DE LA PAMPA',
         'BANCO PAMPA',
         'PAMPA',
-        'VISA PAMPA',
-        'MASTERCARD PAMPA',
         'www.bancopampa.com.ar',
-        'PAMPA BANCO'
+        // VISA-specific patterns
+        'VISA PAMPA',
+        'PAMPA BANCO',
+        // MasterCard-specific patterns
+        'MASTERCARD PAMPA',
+        'CUIT ENTIDAD 30-99907583-1',   // CUIT entidad emisora (MC Pampa)
+        '0800-222-3485',                 // Gold Line exclusivo MC Pampa
+        'MASTERCARD GOLD',               // Encabezado del resumen MC Pampa
       ],
       weight: 1.0
     },
