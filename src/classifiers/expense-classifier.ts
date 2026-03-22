@@ -273,8 +273,12 @@ When you don't recognize a merchant name, reason about it before classifying:
 - "WWWVENTAWEBAPNGOBAR" → tokenize: VENTA+WEB+APN+GOB+AR → APN = Administración de Parques Nacionales + GOB.AR = Argentine government → Viajes (#parques_nacionales, #turismo)
 
 **Evocative name patterns → Viajes:**
-- Names with: montaña, glaciar, hielo, patagoni, andino, pampa, sierra, lago, río, expedicion, aventura, trek, rafting, kayak, safari → Viajes
+- Names with: montaña, glaciar, hielo, patagoni, andino, sierra, lago, río, expedicion, aventura, trek, rafting, kayak, safari → Viajes
 - Names with: hostel, lodge, cabañas, posada, apart, resort, inn → Viajes (#alojamiento)
+- NOTE: "MONTAGNE" alone is NOT Viajes — it is an Argentine outdoor/sportswear clothing brand → Indumentaria
+
+**Unknown boutique / tienda names → Indumentaria:**
+- Short evocative names that sound like boutiques or personal brand names (e.g. "ROQUE NUBLO", "HOPE", "PIRIPOSA", "ILUSIONES", "LUNA") with no other cues → lean toward Indumentaria. Use confidence 0.6.
 
 **Evocative name patterns → Ocio y Entretenimiento:**
 - Names with: kinder, kids, niños, infantil, juguete, toy, play, game, parque_diversion → Ocio y Entretenimiento (#infantil, #juguetes)
@@ -309,6 +313,11 @@ When you don't recognize a merchant name, reason about it before classifying:
 | ANDESMAR | Viajes | [#transporte_largo] | 0.90 |
 | MERPAGO ELAGUILA | Alimentación | [#supermercado] | 0.90 |
 | EL AGUILA | Alimentación | [#supermercado] | 0.90 |
+| MONTAGNE | Indumentaria | [#ropa, #indumentaria] | 0.90 |
+| MONTAGNE PICO | Indumentaria | [#ropa, #indumentaria] | 0.90 |
+| HOPE | Indumentaria | [#ropa, #moda] | 0.80 |
+| PIRIPOSA | Indumentaria | [#ropa, #moda] | 0.75 |
+| ROQUE NUBLO | Indumentaria | [#ropa, #moda] | 0.75 |
 
 ## TRANSACTIONS TO CLASSIFY
 ${transactionList}

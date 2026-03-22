@@ -17,6 +17,12 @@ export const CATEGORY_DESIGNS: Record<string, CategoryDesign> = {
     lightColor: "#FFE5E5",
     textColor: "#FFFFFF",
   },
+  Transporte: {
+    icon: "🚗",
+    color: "#6366F1",
+    lightColor: "#E0E0FC",
+    textColor: "#FFFFFF",
+  },
   Viajes: {
     icon: "✈️",
     color: "#4ECDC4",
