@@ -44,6 +44,8 @@ export interface CreditCardStatement {
   accountNumber: string;
   /** Bank or financial institution name */
   bank: string;
+  /** Card network type */
+  cardType?: string;
   /** Billing period information */
   period: CreditCardPeriod;
   /** Total amounts and balances */

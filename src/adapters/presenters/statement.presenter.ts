@@ -5,7 +5,7 @@
  * category designs, and complete information to minimize API calls.
  */
 
-import { ExpenseStatement } from '../../domain/entities/expense-statement.entity';
+import { ExpenseStatement, CardNetworkType } from '../../domain/entities/expense-statement.entity';
 import { Transaction } from '../../domain/entities/transaction.entity';
 import { CATEGORY_DESIGNS } from '../../shared/constants/category-designs';
 
@@ -14,6 +14,7 @@ export interface PresentedStatement {
   holder: string;
   accountNumber: string;
   bank: string;
+  cardType: CardNetworkType;
   period: {
     previousClosing: string;
     previousDueDate: string;
@@ -127,6 +128,7 @@ export class StatementPresenter {
       holder: frontendData.holder,
       accountNumber: frontendData.accountNumber,
       bank: frontendData.bank,
+      cardType: frontendData.cardType,
       period: frontendData.period,
       totals: {
         pesos: {
