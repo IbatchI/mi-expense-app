@@ -154,7 +154,7 @@ export class StatementExtractionUseCase implements IStatementExtractionUseCase {
     return getCreditCardPrompt(bankType);
   }
 
-  private getExpectedSchema(bankType: string): any {
+  private getExpectedSchema(_bankType: string): any {
     // Define expected schema based on bank type
     const baseSchema = {
       type: 'object',
@@ -200,37 +200,10 @@ export class StatementExtractionUseCase implements IStatementExtractionUseCase {
       }
     };
 
-    // Customize schema based on bank
-    if (bankType.toLowerCase() === 'pampa') {
-      // Pampa has different transaction format
-      return {
-        ...baseSchema,
-        properties: {
-          ...baseSchema.properties,
-          transactions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              required: ['date', 'description', 'amount'],
-              properties: {
-                date: { type: 'string' },
-                description: { type: 'string' },
-                amount: { type: 'number' },
-                currency: { type: 'string' },
-                type: { type: 'string' },
-                installments: { type: 'string' },
-                reference: { type: 'string' }
-              }
-            }
-          }
-        }
-      };
-    }
-
     return baseSchema;
   }
 
-  private validateExtractedData(data: any, bankType: string): {
+  private validateExtractedData(data: any, _bankType: string): {
     isValid: boolean;
     errors: string[];
     warnings: string[];
@@ -261,26 +234,16 @@ export class StatementExtractionUseCase implements IStatementExtractionUseCase {
           warnings.push('No transactions found in statement');
         }
 
-        // Validate transaction structure
+        // Validate transaction structure — unified schema for all banks
         data.transactions.forEach((transaction: any, index: number) => {
           if (!transaction.date) {
             errors.push(`Transaction ${index}: Missing date`);
           }
-          
-          if (bankType.toLowerCase() === 'galicia') {
-            if (!transaction.description) {
-              warnings.push(`Transaction ${index}: Missing description`);
-            }
-            if (typeof transaction.amountPesos !== 'number' && typeof transaction.amountDollars !== 'number') {
-              errors.push(`Transaction ${index}: Missing amount information`);
-            }
-          } else if (bankType.toLowerCase() === 'pampa') {
-            if (!transaction.description) {
-              errors.push(`Transaction ${index}: Missing description`);
-            }
-            if (typeof transaction.amount !== 'number') {
-              errors.push(`Transaction ${index}: Missing amount`);
-            }
+          if (!transaction.description) {
+            warnings.push(`Transaction ${index}: Missing description`);
+          }
+          if (typeof transaction.amountPesos !== 'number' && typeof transaction.amountDollars !== 'number') {
+            errors.push(`Transaction ${index}: Missing amount information`);
           }
         });
       }
@@ -288,15 +251,20 @@ export class StatementExtractionUseCase implements IStatementExtractionUseCase {
 
     // Period validation
     if (data.period) {
-      const periodFields = ['previousClosing', 'previousDueDate', 'currentClosing', 'currentDueDate'];
-      for (const field of periodFields) {
+      // currentClosing and currentDueDate are always required
+      const requiredPeriodFields = ['currentClosing', 'currentDueDate'];
+      for (const field of requiredPeriodFields) {
         if (!data.period[field]) {
           errors.push(`Missing period field: ${field}`);
-        } else {
-          // Basic date format validation
-          if (!/\d{4}-\d{2}-\d{2}/.test(data.period[field])) {
-            warnings.push(`Invalid date format in period.${field}: ${data.period[field]}`);
-          }
+        } else if (!/\d{4}-\d{2}-\d{2}/.test(data.period[field])) {
+          warnings.push(`Invalid date format in period.${field}: ${data.period[field]}`);
+        }
+      }
+      // previousClosing and previousDueDate are optional — not all statement formats include them
+      const optionalPeriodFields = ['previousClosing', 'previousDueDate'];
+      for (const field of optionalPeriodFields) {
+        if (data.period[field] && !/\d{4}-\d{2}-\d{2}/.test(data.period[field])) {
+          warnings.push(`Invalid date format in period.${field}: ${data.period[field]}`);
         }
       }
     }

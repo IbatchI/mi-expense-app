@@ -142,11 +142,23 @@ export class ExpenseStatement {
     }
 
     const id = this.generateStatementId(statement.bank, statement.accountNumber, statement.period.currentClosing);
-    
+
+    // Some statement formats (e.g. simplified Pampa) omit previousClosing/previousDueDate.
+    // Fall back to currentClosing - 30 days and currentDueDate - 30 days respectively.
+    const currentClosingDate = new Date(statement.period.currentClosing + 'T00:00:00.000Z');
+    const fallbackPrevClosing = new Date(currentClosingDate);
+    fallbackPrevClosing.setDate(fallbackPrevClosing.getDate() - 30);
+    const fallbackPrevClosingStr = fallbackPrevClosing.toISOString().split('T')[0];
+
+    const currentDueDate = new Date(statement.period.currentDueDate + 'T00:00:00.000Z');
+    const fallbackPrevDue = new Date(currentDueDate);
+    fallbackPrevDue.setDate(fallbackPrevDue.getDate() - 30);
+    const fallbackPrevDueStr = fallbackPrevDue.toISOString().split('T')[0];
+
     // Convert period
     const period = StatementPeriod.fromDates(
-      statement.period.previousClosing,
-      statement.period.previousDueDate,
+      statement.period.previousClosing || fallbackPrevClosingStr,
+      statement.period.previousDueDate || fallbackPrevDueStr,
       statement.period.currentClosing,
       statement.period.currentDueDate
     );
@@ -192,9 +204,21 @@ export class ExpenseStatement {
 
     const id = this.generateStatementId(statement.bank, statement.accountNumber, statement.period.currentClosing);
 
+    // Some statement formats (e.g. simplified Pampa) omit previousClosing/previousDueDate.
+    // Fall back to currentClosing - 30 days and currentDueDate - 30 days respectively.
+    const currentClosingDate = new Date(statement.period.currentClosing + 'T00:00:00.000Z');
+    const fallbackPrevClosing = new Date(currentClosingDate);
+    fallbackPrevClosing.setDate(fallbackPrevClosing.getDate() - 30);
+    const fallbackPrevClosingStr = fallbackPrevClosing.toISOString().split('T')[0];
+
+    const currentDueDate = new Date(statement.period.currentDueDate + 'T00:00:00.000Z');
+    const fallbackPrevDue = new Date(currentDueDate);
+    fallbackPrevDue.setDate(fallbackPrevDue.getDate() - 30);
+    const fallbackPrevDueStr = fallbackPrevDue.toISOString().split('T')[0];
+
     const period = StatementPeriod.fromDates(
-      statement.period.previousClosing,
-      statement.period.previousDueDate,
+      statement.period.previousClosing || fallbackPrevClosingStr,
+      statement.period.previousDueDate || fallbackPrevDueStr,
       statement.period.currentClosing,
       statement.period.currentDueDate
     );
