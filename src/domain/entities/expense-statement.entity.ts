@@ -179,47 +179,51 @@ export class ExpenseStatement {
    * Creates an ExpenseStatement with categorized transactions
    */
   static fromCategorizedStatement(statement: any, pdfText?: string): ExpenseStatement {
-    const baseStatement = this.fromCreditCardStatement(statement, pdfText);
-    
-    // Process categorized transactions
-    const categorizedTransactions = statement.transactions.map((tx: any) => {
-      // Find base transaction
-      // Match by date + amount. For USD transactions (amountDollars > 0), compare against
-      // the USD amount; for ARS transactions compare against amountPesos (or generic amount).
-      const txAmount = tx.amountDollars > 0
-        ? tx.amountDollars
-        : (tx.amount || tx.amountPesos || 0);
-      const baseTransaction = baseStatement.transactions.find(t => 
-        t.getDateString() === tx.date && 
-        Math.abs(t.amount.getValue() - txAmount) < 0.01
+    if (!statement.period) {
+      throw new Error(
+        `Cannot create statement: period data is missing for bank "${statement.bank || 'unknown'}".`
       );
+    }
+    if (!statement.totals) {
+      throw new Error(
+        `Cannot create statement: totals data is missing for bank "${statement.bank || 'unknown'}".`
+      );
+    }
 
-      if (!baseTransaction) {
-        throw new Error(`Could not find matching base transaction for categorized transaction`);
-      }
+    const id = this.generateStatementId(statement.bank, statement.accountNumber, statement.period.currentClosing);
 
-      // Add category if available
-      if (tx.category && tx.confidence) {
+    const period = StatementPeriod.fromDates(
+      statement.period.previousClosing,
+      statement.period.previousDueDate,
+      statement.period.currentClosing,
+      statement.period.currentDueDate
+    );
+
+    const totals: StatementTotals = {
+      pesos: Money.pesos(statement.totals.pesos),
+      dollars: Money.dollars(statement.totals.dollars),
+      minimumPayment: Money.pesos(statement.totals.minimumPayment)
+    };
+
+    // Convert and categorize transactions in a single pass
+    const transactions = this.convertTransactions(statement.transactions, statement.bank).map((baseTx, index) => {
+      const raw = statement.transactions[index];
+      if (raw?.category && raw?.confidence) {
         const category = Category.fromSpanishCategory(
-          tx.category,
-          tx.category, // English name same as Spanish for now
-          tx.tags || [],
-          'shopping-bag', // Default icon
-          '#6366F1' // Default color
+          raw.category,
+          raw.category,
+          raw.tags || [],
+          'shopping-bag',
+          '#6366F1'
         );
-        
-        // Convert confidence number to ConfidenceScore value object
-        const confidenceScore = ConfidenceScore.create(tx.confidence);
-        return baseTransaction.categorize(category, confidenceScore);
+        const confidenceScore = ConfidenceScore.create(raw.confidence);
+        return baseTx.categorize(category, confidenceScore);
       }
-
-      return baseTransaction;
+      return baseTx;
     });
 
-    // Calculate category breakdown
-    const categoryBreakdown = this.calculateCategoryBreakdown(categorizedTransactions);
+    const categoryBreakdown = this.calculateCategoryBreakdown(transactions);
 
-    // Add metadata if available
     const metadata: ProcessingMetadata | undefined = statement.classificationMetadata ? {
       processingTime: statement.classificationMetadata.processingTime,
       provider: statement.classificationMetadata.provider || 'unknown',
@@ -232,15 +236,17 @@ export class ExpenseStatement {
       classificationSuccess: true
     } : undefined;
 
+    const cardType = this.normalizeCardType(statement.cardType, pdfText);
+
     return new ExpenseStatement(
-      baseStatement._id,
-      baseStatement._holder,
-      baseStatement._accountNumber,
-      baseStatement._bank,
-      baseStatement._cardType,
-      baseStatement._period,
-      baseStatement._totals,
-      categorizedTransactions,
+      id,
+      statement.holder,
+      statement.accountNumber,
+      statement.bank,
+      cardType,
+      period,
+      totals,
+      transactions,
       categoryBreakdown,
       metadata
     );
@@ -347,12 +353,8 @@ export class ExpenseStatement {
       throw new Error('Statement must have at least one transaction');
     }
 
-    // Validate that all transactions fall within the statement period
-    for (const transaction of this._transactions) {
-      if (!this._period.isDateInCurrentPeriod(transaction.date)) {
-        console.warn(`Transaction ${transaction.id} falls outside statement period`);
-      }
-    }
+    // Note: installment transactions may have dates outside the current period
+    // (the original purchase date may predate this statement) — this is expected behavior.
   }
 
   // Getters

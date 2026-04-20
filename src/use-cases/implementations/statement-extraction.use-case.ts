@@ -186,10 +186,10 @@ export class StatementExtractionUseCase implements IStatementExtractionUseCase {
           type: 'array',
           items: {
             type: 'object',
-            required: ['date', 'merchant', 'amountPesos', 'amountDollars'],
+            required: ['date', 'description', 'amountPesos', 'amountDollars'],
             properties: {
               date: { type: 'string' },
-              merchant: { type: 'string' },
+              description: { type: 'string' },
               installment: { type: ['string', 'null'] },
               voucher: { type: 'string' },
               amountPesos: { type: 'number' },
@@ -268,8 +268,8 @@ export class StatementExtractionUseCase implements IStatementExtractionUseCase {
           }
           
           if (bankType.toLowerCase() === 'galicia') {
-            if (!transaction.merchant) {
-              errors.push(`Transaction ${index}: Missing merchant`);
+            if (!transaction.description) {
+              warnings.push(`Transaction ${index}: Missing description`);
             }
             if (typeof transaction.amountPesos !== 'number' && typeof transaction.amountDollars !== 'number') {
               errors.push(`Transaction ${index}: Missing amount information`);

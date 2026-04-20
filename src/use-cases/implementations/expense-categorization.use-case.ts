@@ -97,10 +97,20 @@ export class ExpenseCategorializationUseCase implements IExpenseCategorializatio
       });
 
       // Exclude payment transactions before classification — they are credit card payments,
-      // not expenses, and should not appear in the response at all.
+      // not expenses, and should not be categorized.
+      const paymentTransactions = request.statementData.transactions.filter(
+        (tx: any) => tx.type === 'payment'
+      );
       const transactionsToClassify = request.statementData.transactions.filter(
         (tx: any) => tx.type !== 'payment'
       );
+
+      if (paymentTransactions.length > 0) {
+        this.logger.debug('Payment transactions excluded from classification', {
+          count: paymentTransactions.length,
+          descriptions: paymentTransactions.map((tx: any) => tx.description || tx.merchant)
+        });
+      }
 
       // Classify expenses using the gateway
       const classificationResult = await expenseClassificationGateway.classifyExpenses({
@@ -123,7 +133,10 @@ export class ExpenseCategorializationUseCase implements IExpenseCategorializatio
 
       const classifiedData = classificationResult.data;
 
-      // Enhance categorized transactions with category designs
+      // Enhance categorized transactions with category designs.
+      // classifiedData.categorizedTransactions already contains ALL transactions
+      // (including those mapped to "Sin Categoría") — do NOT add uncategorizedTransactions
+      // on top of them or they will be duplicated.
       const enhancedTransactions = classifiedData.categorizedTransactions.map((ctx: any) => ({
         ...ctx.transaction,
         category: ctx.category,
@@ -133,10 +146,10 @@ export class ExpenseCategorializationUseCase implements IExpenseCategorializatio
         categoryDesign: this.getCategoryDesign(ctx.category)
       }));
 
-      // Add uncategorized transactions
+      // Re-include payment transactions that were excluded from classification (pass-through)
       const allTransactions = [
         ...enhancedTransactions,
-        ...classifiedData.uncategorizedTransactions
+        ...paymentTransactions
       ];
 
       // Calculate enhanced category breakdown with Money objects and percentages

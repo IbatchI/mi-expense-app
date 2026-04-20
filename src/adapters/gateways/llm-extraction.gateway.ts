@@ -82,7 +82,8 @@ export class LLMExtractionGateway implements ILLMExtractionGateway {
       const gateway = new LLMExtractionGateway(config);
       const response = await gateway.callLLM('Hello, respond with "OK"');
       return response.includes("OK");
-    } catch {
+    } catch (error) {
+      console.error("   ❌ testConnection error:", error instanceof Error ? error.message : error);
       return false;
     }
   }
