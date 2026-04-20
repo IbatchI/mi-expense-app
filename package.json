@@ -4,11 +4,15 @@
   "description": "Extract structured data from credit card statements using LLMs (Gemini or GitHub Models)",
   "main": "dist/index.js",
   "scripts": {
-    "start": "ts-node src/index.ts",
-    "dev": "ts-node src/index.ts",
-    "dev:gemini": "PROVIDER=gemini ts-node src/index.ts",
-    "dev:github": "PROVIDER=github ts-node src/index.ts",
+    "start": "ts-node src/adapters/web/dev-server.ts",
+    "dev": "ts-node src/adapters/web/dev-server.ts",
+    "dev:old": "ts-node src/index.ts",
+    "dev:gemini": "PROVIDER=gemini ts-node src/adapters/web/dev-server.ts",
+    "dev:github": "PROVIDER=github ts-node src/adapters/web/dev-server.ts",
     "build": "tsc",
+    "build:lambda": "tsc && cp -r dist/* lambda/",
+    "test:health": "curl http://localhost:3001/health",
+    "test:api": "curl http://localhost:3001/api",
     "clean": "rm -rf dist"
   },
   "keywords": [
@@ -23,16 +27,24 @@
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
-    "pdf-parse": "^1.1.1",
-    "dotenv": "^16.4.5",
     "@google/generative-ai": "^0.19.0",
-    "node-fetch": "^3.3.2"
+    "aws-lambda": "^1.0.7",
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "multer": "^2.1.0",
+    "node-fetch": "^3.3.2",
+    "pdf-parse": "^1.1.1"
   },
   "devDependencies": {
-    "typescript": "^5.3.3",
-    "ts-node": "^10.9.2",
+    "@types/aws-lambda": "^8.10.161",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.0.0",
     "@types/node": "^20.10.6",
-    "@types/pdf-parse": "^1.1.4"
+    "@types/pdf-parse": "^1.1.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   },
   "engines": {
     "node": ">=18.0.0"

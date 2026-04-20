@@ -103,3 +103,7 @@ jspm_packages/
 
 # DynamoDB Local files
 .dynamodb/
+
+# Debug output files
+output/debug/
+result.json

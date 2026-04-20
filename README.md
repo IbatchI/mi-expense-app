@@ -21,6 +21,7 @@ cp .env.example .env
 Edit `.env` and add your API key:
 
 **Option A: Using Gemini (Recommended - Free)**
+
 ```env
 PROVIDER=gemini
 GEMINI_API_KEY=your_gemini_api_key_here
@@ -29,6 +30,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 Get your Gemini API key: https://makersuite.google.com/app/apikey
 
 **Option B: Using GitHub Models (Copilot Pro)**
+
 ```env
 PROVIDER=github
 GITHUB_TOKEN=your_github_token_here
@@ -89,7 +91,7 @@ The extracted data is saved to `output/extracted-data.json` with this structure:
   "totals": {
     "pesos": 482149.89,
     "dollars": -0.01,
-    "minimumPayment": 35590.00
+    "minimumPayment": 35590.0
   },
   "transactions": [
     {
@@ -97,7 +99,7 @@ The extracted data is saved to `output/extracted-data.json` with this structure:
       "merchant": "WWWVENTAWEBAPNGOBAR",
       "installment": null,
       "voucher": "009909",
-      "amountPesos": 52500.00,
+      "amountPesos": 52500.0,
       "amountDollars": 0
     }
   ]
@@ -114,16 +116,19 @@ The extracted data is saved to `output/extracted-data.json` with this structure:
 ## 🐛 Troubleshooting
 
 ### Error: "Missing API key"
+
 - Check that your `.env` file exists
 - Verify the API key is correct
 - Make sure you selected the right `PROVIDER`
 
 ### Error: "PDF not found"
+
 - Place your PDF in the `pdfs/` folder
 - Rename it to `statement.pdf`
 - Or modify `PDF_PATH` in your `.env` file
 
 ### Error: "Invalid JSON response"
+
 - The PDF content might be too complex for the LLM
 - Try a different model (set `MODEL` in `.env`)
 - Check if the PDF has clear, readable text
@@ -139,7 +144,7 @@ GEMINI_API_KEY=your_key_here       # if using Gemini
 GITHUB_TOKEN=your_token_here       # if using GitHub
 
 # Optional
-MODEL=gemini-1.5-flash             # or 'gpt-4o', 'gpt-4o-mini', etc.
+MODEL=gemini-3-flash-review             # or 'gpt-4o', 'gpt-4o-mini', etc.
 PDF_PATH=pdfs/statement.pdf        # Custom PDF path
 OUTPUT_PATH=output/data.json       # Custom output path
 ```
@@ -147,11 +152,13 @@ OUTPUT_PATH=output/data.json       # Custom output path
 ## 🤖 Supported Models
 
 ### Gemini (Free)
-- `gemini-1.5-flash` (default) - Fast and efficient
-- `gemini-1.5-pro` - More capable but slower
+
+- `gemini-3-flash-review` (default) - Fast and efficient
+- `gemini-3-flash-preview` - More capable but slower
 - `gemini-1.0-pro` - Legacy model
 
 ### GitHub Models (Requires Copilot Pro)
+
 - `gpt-4o` (default) - Latest GPT-4 Omni
 - `gpt-4o-mini` - Smaller, faster version
 - `gpt-4` - GPT-4 Turbo
