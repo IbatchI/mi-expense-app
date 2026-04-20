@@ -21,6 +21,7 @@ import {
   PDFProcessorGateway,
   BankDetectionGateway,
 } from '../../adapters/gateways';
+import { TavilyGateway } from '../../adapters/gateways/external/tavily.gateway';
 
 // Domain Services
 import { CategoryManagementService } from '../../domain/services/category-management.service';
@@ -190,10 +191,16 @@ export class UseCaseFactory {
     // Expense Categorization Use Case (no longer needs classification gateway injected)
     this.container.registerTransient(
       'ExpenseCategorializationUseCase',
-      () => new ExpenseCategorializationUseCase(
-        this.container.resolve('CategoryRepository'),
-        this.container.resolve(SERVICE_TOKENS.LOGGER.name)
-      )
+      () => {
+        const tavilyGateway = process.env.TAVILY_API_KEY
+          ? new TavilyGateway(process.env.TAVILY_API_KEY)
+          : undefined;
+        return new ExpenseCategorializationUseCase(
+          this.container.resolve('CategoryRepository'),
+          this.container.resolve(SERVICE_TOKENS.LOGGER.name),
+          tavilyGateway,
+        );
+      }
     );
 
     // LLM Connection Test Use Case (no longer needs gateway injected)

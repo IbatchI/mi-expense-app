@@ -7,6 +7,7 @@
 
 import {
   IExpenseClassificationGateway,
+  IWebSearchGateway,
   GatewayResult,
   ClassificationRequest,
   ClassificationResult,
@@ -74,7 +75,10 @@ const CATEGORIES: { [key: string]: { en: string; tags: string[] } } = {
 };
 
 export class ExpenseClassificationGateway implements IExpenseClassificationGateway {
-  constructor(private readonly llmExtractionGateway: LLMExtractionGateway) {}
+  constructor(
+    private readonly llmExtractionGateway: LLMExtractionGateway,
+    private readonly webSearchGateway?: IWebSearchGateway,
+  ) {}
 
   async classifyExpenses(
     request: ClassificationRequest,
@@ -104,8 +108,14 @@ export class ExpenseClassificationGateway implements IExpenseClassificationGatew
       const rawResponse = await this.llmExtractionGateway.callLLM(prompt);
       const classifications = this.parseClassificationResponse(rawResponse);
 
+      // Enrichment pass for low-confidence transactions
+      const enrichedClassifications = await this.enrichLowConfidenceTransactions(
+        request.transactions,
+        classifications,
+      );
+
       const categorizedTransactions = request.transactions.map((tx: any, index: number) => {
-        const match = classifications.find(
+        const match = enrichedClassifications.find(
           (c: any) => c.index === index + 1 || c.description === tx.description || c.description === tx.merchant,
         );
         return {
@@ -379,5 +389,137 @@ Respond ONLY with valid JSON (no markdown, no extra text):
     if (typeof transaction.amountDollars === "number" && transaction.amountDollars !== 0) return transaction.amountDollars * 1000;
     if (typeof transaction.amount === "number") return transaction.amount;
     return 0;
+  }
+
+  // ── Enrichment helpers ──────────────────────────────────────────────────────
+
+  private async enrichLowConfidenceTransactions(
+    transactions: any[],
+    classifications: any[],
+  ): Promise<any[]> {
+    if (!this.webSearchGateway) return classifications;
+
+    // Build list of low-confidence items with original index into classifications[]
+    const lowConfidenceItems = classifications
+      .map((c, i) => ({ classIdx: i, classification: c }))
+      .filter(({ classification: c }) => (c.confidence ?? 0) < 0.70);
+
+    if (lowConfidenceItems.length === 0) return classifications;
+
+    // Run parallel searches — never throw
+    const searchResults = await Promise.allSettled(
+      lowConfidenceItems.map(({ classification: c }) => {
+        const merchant = c.description ?? "";
+        return this.webSearchGateway!.search(merchant);
+      }),
+    );
+
+    // Build index→snippet map — keep only snippets >= 20 chars
+    const snippetsByIdx = new Map<number, string>();
+    lowConfidenceItems.forEach(({ classIdx }, i) => {
+      const result = searchResults[i];
+      if (result.status === "fulfilled" && result.value.length >= 20) {
+        snippetsByIdx.set(classIdx, result.value);
+      }
+    });
+
+    if (snippetsByIdx.size === 0) return classifications;
+
+    // Build enrichment subset — only items with a useful snippet
+    const enrichableItems = lowConfidenceItems.filter(({ classIdx }) => snippetsByIdx.has(classIdx));
+    const lowConfTxs = enrichableItems.map(({ classIdx }) => {
+      const c = classifications[classIdx];
+      return transactions.find(
+        (tx: any, txIdx: number) =>
+          c.index === txIdx + 1 ||
+          c.description === tx.description ||
+          c.description === tx.merchant,
+      ) ?? {};
+    });
+
+    if (lowConfTxs.length === 0) return classifications;
+
+    const enrichmentPrompt = this.buildEnrichmentPrompt(lowConfTxs, enrichableItems.map(({ classIdx }) => snippetsByIdx.get(classIdx)!));
+
+    try {
+      const rawResponse = await this.llmExtractionGateway.callLLM(enrichmentPrompt);
+      const enriched = this.parseEnrichmentResponse(rawResponse);
+
+      // Merge enriched results back by subset index
+      const merged = [...classifications];
+      enriched.forEach((e: any) => {
+        const item = enrichableItems[e.index - 1];
+        if (!item) return;
+        merged[item.classIdx] = {
+          ...merged[item.classIdx],
+          category: e.category ?? merged[item.classIdx].category,
+          confidence: e.confidence ?? merged[item.classIdx].confidence,
+          tags: e.tags ?? merged[item.classIdx].tags,
+        };
+      });
+
+      return merged;
+    } catch (err) {
+      console.warn("[ExpenseClassificationGateway] Enrichment LLM parse error — keeping originals:", err);
+      return classifications;
+    }
+  }
+
+  private buildEnrichmentPrompt(
+    transactions: any[],
+    snippets: string[],
+  ): string {
+    const items = transactions
+      .map((tx, i) => {
+        const merchantKey = tx.description ?? tx.merchant ?? "";
+        const snippet = snippets[i] ?? "";
+        const amount = tx.amountPesos != null
+          ? `$${tx.amountPesos}`
+          : tx.amountDollars != null
+            ? `U$S${tx.amountDollars}`
+            : "unknown";
+        return `${i + 1}. "${merchantKey}" — amount: ${amount}\n   Web context: ${snippet}`;
+      })
+      .join("\n");
+
+    return `You are a financial transaction classifier. Re-classify the following low-confidence transactions using the provided web context.
+
+## TRANSACTIONS TO RE-CLASSIFY
+${items}
+
+## AVAILABLE CATEGORIES (exact Spanish names):
+Hogar, Alimentación, Transporte, Ocio y Entretenimiento, Salud, Belleza y Cuidado Personal, Viajes, Indumentaria, Compras Personales, Educación, Mascotas, Trabajo / Negocio, Descuentos, Sin Categoría
+
+## OUTPUT FORMAT
+Respond ONLY with valid JSON (no markdown, no extra text):
+{
+  "enriched": [
+    { "index": 1, "category": "Salud", "confidence": 0.85, "tags": ["#farmacia"] }
+  ]
+}
+
+Use the web context to assign the correct category with higher confidence. The index corresponds to the position in the list above.`;
+  }
+
+  private parseEnrichmentResponse(response: string): any[] {
+    const cleaned = response
+      .replace(/```json\s*/g, "")
+      .replace(/```\s*$/g, "")
+      .trim();
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error("No JSON found in enrichment response");
+      parsed = JSON.parse(match[0]);
+    }
+
+    if (!parsed.enriched || !Array.isArray(parsed.enriched)) {
+      throw new Error("Invalid enrichment response: missing enriched array");
+    }
+
+    return parsed.enriched;
   }
 }

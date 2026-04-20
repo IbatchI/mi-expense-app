@@ -10,7 +10,7 @@ import {
   ExpenseCategorializationRequest,
   UseCaseResult
 } from '../interfaces';
-import { ILoggingGateway } from '../gateways/interfaces';
+import { ILoggingGateway, IWebSearchGateway } from '../gateways/interfaces';
 import { ICategoryRepository } from '../repositories/interfaces';
 import { CATEGORY_DESIGNS } from '../../shared/constants/category-designs';
 import { LLMGatewayFactory } from '../../adapters/gateways/llm-gateway.factory';
@@ -19,7 +19,8 @@ import { ExpenseClassificationGateway } from '../../adapters/gateways/expense-cl
 export class ExpenseCategorializationUseCase implements IExpenseCategorializationUseCase {
   constructor(
     private readonly categoryRepository: ICategoryRepository,
-    private readonly logger: ILoggingGateway
+    private readonly logger: ILoggingGateway,
+    private readonly webSearchGateway?: IWebSearchGateway,
   ) {}
 
   async categorizeExpenses(request: ExpenseCategorializationRequest): Promise<UseCaseResult<any>> {
@@ -71,7 +72,7 @@ export class ExpenseCategorializationUseCase implements IExpenseCategorializatio
       const llmGateway = LLMGatewayFactory.createFromExtractorConfig(request.extractorConfig);
       
       // Create expense classification gateway with the LLM gateway
-      const expenseClassificationGateway = new ExpenseClassificationGateway(llmGateway);
+      const expenseClassificationGateway = new ExpenseClassificationGateway(llmGateway, this.webSearchGateway);
 
       // Get available categories
       const categoriesResult = await this.categoryRepository.findAll();

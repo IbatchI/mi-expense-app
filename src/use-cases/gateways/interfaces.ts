@@ -174,6 +174,11 @@ export interface INotificationGateway {
   sendWebhook(url: string, payload: any): Promise<GatewayResult<void>>;
 }
 
+// Web search interface
+export interface IWebSearchGateway {
+  search(query: string, options?: { timeoutMs?: number }): Promise<string>;
+}
+
 // Logging and monitoring interfaces
 export interface LogEntry {
   timestamp: Date;
