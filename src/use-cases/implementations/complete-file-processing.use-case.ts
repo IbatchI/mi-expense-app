@@ -30,7 +30,7 @@ export class CompleteFileProcessingUseCase implements ICompleteFileProcessingUse
     private readonly expenseCategorializationUseCase: IExpenseCategorializationUseCase,
     private readonly llmConnectionTestUseCase: ILLMConnectionTestUseCase,
     private readonly statementRepository: IStatementRepository,
-    private readonly logger: ILoggingGateway
+    private readonly logger: ILoggingGateway,
   ) {}
 
   async processFile(request: FileProcessingRequest): Promise<UseCaseResult<{
@@ -119,7 +119,7 @@ export class CompleteFileProcessingUseCase implements ICompleteFileProcessingUse
       // STEP 4: Extract statement data
       this.logger.info('Step 4: Extracting statement data', { requestId });
       const extractionResult = await this.statementExtractionUseCase.extractStatement({
-        cleanedText: pdfResult.data.cleanedText,
+        cleanedText: pdfResult.data.rawText,
         bankType: bankInfo.bank,
         extractorConfig: request.extractorConfig
       });
@@ -199,7 +199,6 @@ export class CompleteFileProcessingUseCase implements ICompleteFileProcessingUse
       if (request.outputPath) {
         await this.saveIntermediateFiles(request.outputPath, {
           rawText: pdfResult.data.rawText,
-          cleanedText: pdfResult.data.cleanedText,
           bankDetection: bankInfo,
           extractedData: extractionResult.data,
           finalStatement: statement.toFrontendFormat()
@@ -274,7 +273,6 @@ export class CompleteFileProcessingUseCase implements ICompleteFileProcessingUse
 
     await Promise.all([
       fs.promises.writeFile(path.join(baseDir, `${baseName}_raw_text.txt`), data.rawText),
-      fs.promises.writeFile(path.join(baseDir, `${baseName}_cleaned_text.txt`), data.cleanedText),
       fs.promises.writeFile(path.join(baseDir, `${baseName}_bank_detection.json`), JSON.stringify(data.bankDetection, null, 2)),
       fs.promises.writeFile(path.join(baseDir, `${baseName}_extracted_data.json`), JSON.stringify(data.extractedData, null, 2)),
       fs.promises.writeFile(outputPath, JSON.stringify(data.finalStatement, null, 2))

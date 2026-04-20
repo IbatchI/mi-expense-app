@@ -18,13 +18,22 @@ export class BankDetectionGateway implements IBankDetectionGateway {
     {
       bank: 'galicia',
       patterns: [
+        // Primary identifier: CUIT fiscal único de Banco Galicia (máxima confianza)
+        'CUIT BANCO: 30-50000173-5',   // tal como aparece en el PDF normalizado
+        '30-50000173-5',               // fallback por si el label varía
+        // Nombre del banco
         'BANCO GALICIA',
-        'GALICIA',
-        'VISA GALICIA',
-        'MASTERCARD GALICIA',
-        'www.galicia.com',
+        'BANCOGALICIA.COM',
         'GALICIA Y BUENOS AIRES S.A.',
-        'Banco de Galicia y Buenos Aires'
+        'BANCO DE GALICIA Y BUENOS AIRES',
+        // Formato de número de resumen exclusivo de Galicia (VI... o MC...)
+        'RESUMEN N° VI',
+        'RESUMEN N° MC',
+        // Patrones de impuestos exclusivos del formato Galicia
+        'IIBB PERCEP-LAPA',
+        'IVA RG 4240',
+        // Producto
+        'GALICIA VISA GOLD',
       ],
       weight: 1.0
     },

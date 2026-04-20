@@ -250,26 +250,6 @@ export class ServiceFactory {
       };
     }
   }
-
-  static createLLMExtractor(config: LLMConfig) {
-    if (config.provider === 'gemini') {
-      // Import and return Gemini extractor
-      const { GeminiExtractor } = require('../extractors/gemini.extractor');
-      return new GeminiExtractor({
-        provider: 'gemini',
-        apiKey: config.apiKey,
-        model: config.model
-      });
-    } else {
-      // Import and return GitHub extractor
-      const { GitHubExtractor } = require('../extractors/github.extractor');
-      return new GitHubExtractor({
-        provider: 'github',
-        apiKey: config.apiKey,
-        model: config.model
-      });
-    }
-  }
 }
 
 /**
@@ -292,10 +272,6 @@ export class ConfigurationFactory {
     // Register storage
     const storage = ServiceFactory.createStorage(config.storage);
     container.registerInstance('STORAGE', storage);
-
-    // Register LLM extractor
-    const llmExtractor = ServiceFactory.createLLMExtractor(config.llm);
-    container.registerInstance(SERVICE_TOKENS.LLM_EXTRACTOR.name, llmExtractor);
 
     // Log configuration
     logger.info('Services registered successfully', {

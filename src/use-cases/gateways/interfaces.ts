@@ -63,23 +63,6 @@ export interface IBankDetectionGateway {
   addCustomPattern(bank: string, patterns: string[]): void;
 }
 
-// Text preprocessing interfaces
-export interface PreprocessingResult {
-  cleanedText: string;
-  extractedData?: any;
-  removedSections: string[];
-  appliedRules: string[];
-}
-
-export interface ITextPreprocessorGateway {
-  preprocess(rawText: string, bankType: string): Promise<GatewayResult<PreprocessingResult>>;
-  getAvailablePreprocessors(): string[];
-  validateTextQuality(text: string): GatewayResult<{
-    quality: 'high' | 'medium' | 'low';
-    issues: string[];
-    suggestions: string[];
-  }>;
-}
 
 // LLM extraction interfaces
 export interface LLMExtractionRequest {
@@ -229,7 +212,6 @@ export interface IMonitoringGateway {
 export interface IGateways {
   pdfProcessor: IPDFProcessorGateway;
   bankDetection: IBankDetectionGateway;
-  textPreprocessor: ITextPreprocessorGateway;
   llmExtraction: ILLMExtractionGateway;
   expenseClassification: IExpenseClassificationGateway;
   fileStorage: IFileStorageGateway;
@@ -242,7 +224,6 @@ export interface IGateways {
 export interface IGatewayFactory {
   createPDFProcessorGateway(): IPDFProcessorGateway;
   createBankDetectionGateway(): IBankDetectionGateway;
-  createTextPreprocessorGateway(): ITextPreprocessorGateway;
   createLLMExtractionGateway(config: LLMConfig): ILLMExtractionGateway;
   createExpenseClassificationGateway(config: LLMConfig): IExpenseClassificationGateway;
   createFileStorageGateway(config: FileStorageConfig): IFileStorageGateway;

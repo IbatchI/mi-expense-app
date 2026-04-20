@@ -6,7 +6,6 @@
 
 export { PDFProcessorGateway } from './pdf-processor.gateway';
 export { BankDetectionGateway } from './bank-detection.gateway';
-export { TextPreprocessorGateway } from './text-preprocessor.gateway';
 export { LLMExtractionGateway } from './llm-extraction.gateway';
 export { ExpenseClassificationGateway } from './expense-classification.gateway';
 export { LLMGatewayFactory } from './llm-gateway.factory';

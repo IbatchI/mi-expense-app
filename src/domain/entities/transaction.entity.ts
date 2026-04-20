@@ -26,7 +26,8 @@ export class Transaction {
     private readonly _voucher?: string,
     private readonly _category?: Category,
     private readonly _categoryConfidence?: ConfidenceScore,
-    private readonly _tags: readonly string[] = []
+    private readonly _tags: readonly string[] = [],
+    private readonly _excludeFromTotal: boolean = false
   ) {
     this.validateTransaction();
   }
@@ -47,6 +48,7 @@ export class Transaction {
     category?: Category;
     categoryConfidence?: ConfidenceScore;
     tags?: string[];
+    excludeFromTotal?: boolean;
   }): Transaction {
     const date = typeof params.date === 'string' ? this.parseDate(params.date) : new Date(params.date);
     
@@ -62,7 +64,8 @@ export class Transaction {
       params.voucher,
       params.category,
       params.categoryConfidence,
-      params.tags ? [...params.tags] : []
+      params.tags ? [...params.tags] : [],
+      params.excludeFromTotal ?? false
     );
   }
 
@@ -82,26 +85,38 @@ export class Transaction {
     const id = this.generateTransactionId(params.date, params.merchant, params.voucher);
     const date = this.parseDate(params.date);
     
-    // Determine primary amount based on which is non-zero
-    const primaryAmount = params.amountPesos !== 0 
-      ? Money.pesos(params.amountPesos)
-      : Money.dollars(params.amountDollars);
+    // DB.RG 5617 is a bank-applied discount — show as negative discount, exclude from expense totals
+    const isDbRg = /DB\.RG\s+\d+/i.test(params.merchant);
+
+    // Determine primary amount and currency.
+    // If amountDollars > 0 the transaction is in USD (amountPesos may contain the ARS equivalent — ignore it).
+    // DB.RG is always stored as a negative ARS discount.
+    const isUSD = params.amountDollars > 0 && !isDbRg;
+    const rawAmount = isUSD ? params.amountDollars : (params.amountPesos !== 0 ? params.amountPesos : params.amountDollars);
+    const signedAmount = isDbRg ? -Math.abs(rawAmount) : rawAmount;
+    const primaryAmount = isUSD
+      ? Money.dollars(params.amountDollars)
+      : Money.pesos(signedAmount);
 
     // Extract merchant from description
     const merchant = this.extractMerchant(params.merchant);
-    
+
+    const excludeFromTotal = isDbRg;
+
     return new Transaction(
       id,
       date,
       params.merchant,
       primaryAmount,
-      this.determineTransactionType(params.merchant, primaryAmount),
+      isDbRg ? 'discount' : this.determineTransactionType(params.merchant, primaryAmount),
       merchant,
       params.installment || undefined,
       undefined,
       params.voucher,
       params.category,
-      params.categoryConfidence
+      params.categoryConfidence,
+      [],
+      excludeFromTotal
     );
   }
 
@@ -330,6 +345,10 @@ export class Transaction {
     return [...this._tags];
   }
 
+  get excludeFromTotal(): boolean {
+    return this._excludeFromTotal;
+  }
+
   /**
    * Returns the transaction date as a formatted string
    */
@@ -407,7 +426,8 @@ export class Transaction {
       this._voucher,
       category,
       confidence,
-      this._tags
+      this._tags,
+      this._excludeFromTotal
     );
   }
 
@@ -431,7 +451,8 @@ export class Transaction {
       this._voucher,
       this._category,
       this._categoryConfidence,
-      uniqueTags
+      uniqueTags,
+      this._excludeFromTotal
     );
   }
 
@@ -452,6 +473,7 @@ export class Transaction {
     installments?: string;
     reference?: string;
     voucher?: string;
+    excludeFromTotal?: boolean;
     category?: {
       name: string;
       englishName: string;
@@ -474,6 +496,10 @@ export class Transaction {
       type: this._type,
       tags: [...this._tags]
     };
+
+    if (this._excludeFromTotal) {
+      result.excludeFromTotal = true;
+    }
 
     if (this._installments) {
       result.installments = this._installments;
@@ -535,6 +561,10 @@ export class Transaction {
       result.categoryConfidence = this._categoryConfidence.getValue();
     }
 
+    if (this._excludeFromTotal) {
+      result.excludeFromTotal = true;
+    }
+
     return result;
   }
 
@@ -564,7 +594,8 @@ export class Transaction {
       obj.voucher,
       category,
       categoryConfidence,
-      obj.tags || []
+      obj.tags || [],
+      obj.excludeFromTotal ?? false
     );
   }
 

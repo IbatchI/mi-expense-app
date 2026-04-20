@@ -20,7 +20,6 @@ import { CompleteFileProcessingUseCase } from '../implementations/complete-file-
 import {
   PDFProcessorGateway,
   BankDetectionGateway,
-  TextPreprocessorGateway
 } from '../../adapters/gateways';
 
 // Domain Services
@@ -69,12 +68,6 @@ export class UseCaseFactory {
     this.container.registerSingleton(
       'BankDetectionGateway',
       () => new BankDetectionGateway()
-    );
-
-    // Text Preprocessor Gateway
-    this.container.registerTransient(
-      'TextPreprocessorGateway',
-      () => new TextPreprocessorGateway()
     );
 
     // Note: LLM gateways are now created dynamically per-request using LLMGatewayFactory
@@ -182,7 +175,6 @@ export class UseCaseFactory {
       'PDFProcessingUseCase',
       () => new PDFProcessingUseCase(
         this.container.resolve('PDFProcessorGateway'),
-        this.container.resolve('TextPreprocessorGateway'),
         this.container.resolve(SERVICE_TOKENS.LOGGER.name)
       )
     );
@@ -222,7 +214,7 @@ export class UseCaseFactory {
         this.container.resolve('ExpenseCategorializationUseCase'),
         this.container.resolve('LLMConnectionTestUseCase'),
         this.container.resolve(SERVICE_TOKENS.STATEMENT_REPOSITORY.name),
-        this.container.resolve(SERVICE_TOKENS.LOGGER.name)
+        this.container.resolve(SERVICE_TOKENS.LOGGER.name),
       )
     );
   }

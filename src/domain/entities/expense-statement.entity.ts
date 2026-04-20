@@ -184,9 +184,14 @@ export class ExpenseStatement {
     // Process categorized transactions
     const categorizedTransactions = statement.transactions.map((tx: any) => {
       // Find base transaction
+      // Match by date + amount. For USD transactions (amountDollars > 0), compare against
+      // the USD amount; for ARS transactions compare against amountPesos (or generic amount).
+      const txAmount = tx.amountDollars > 0
+        ? tx.amountDollars
+        : (tx.amount || tx.amountPesos || 0);
       const baseTransaction = baseStatement.transactions.find(t => 
         t.getDateString() === tx.date && 
-        Math.abs(t.amount.getValue() - (tx.amount || tx.amountPesos || 0)) < 0.01
+        Math.abs(t.amount.getValue() - txAmount) < 0.01
       );
 
       if (!baseTransaction) {
@@ -249,30 +254,24 @@ export class ExpenseStatement {
     return `${normalizedBank}_${normalizedAccount}_${normalizedDate}`;
   }
 
-  private static convertTransactions(transactions: any[], bank: string): Transaction[] {
+  private static convertTransactions(transactions: any[], _bank: string): Transaction[] {
     return transactions.map((tx, index) => {
       try {
-        if (bank.toLowerCase() === 'galicia') {
-          return Transaction.fromGaliciaFormat({
-            date: tx.date,
-            merchant: tx.merchant,
-            installment: tx.installment,
-            voucher: tx.voucher,
-            amountPesos: tx.amountPesos || 0,
-            amountDollars: tx.amountDollars || 0
-          });
-        } else {
-          // Pampa or generic format
-          return Transaction.fromPampaFormat({
-            date: tx.date,
-            description: tx.description || tx.merchant,
-            amount: tx.amount || tx.amountPesos || 0,
-            currency: tx.currency || (tx.amountDollars > 0 ? 'USD' : 'ARS'),
-            type: tx.type,
-            installments: tx.installments,
-            reference: tx.reference
-          });
-        }
+        // Unified format: all prompts now return description, amountPesos, amountDollars, installments, reference
+        const amountPesos = tx.amountPesos ?? tx.amount ?? 0;
+        const amountDollars = tx.amountDollars ?? 0;
+        const currency = amountDollars > 0 ? 'USD' : 'ARS';
+        const amount = currency === 'USD' ? amountDollars : amountPesos;
+
+        return Transaction.fromPampaFormat({
+          date: tx.date,
+          description: tx.description || tx.merchant || '',
+          amount,
+          currency,
+          type: tx.type,
+          installments: tx.installments ?? tx.installment ?? null,
+          reference: tx.reference || tx.voucher || null
+        });
       } catch (error) {
         throw new Error(`Failed to convert transaction ${index}: ${error instanceof Error ? error.message : error}`);
       }
@@ -414,10 +413,10 @@ export class ExpenseStatement {
   }
 
   /**
-   * Returns only the transactions that are expenses (excluding payments, refunds)
+   * Returns only the transactions that are expenses (excluding payments, refunds, and bank-applied discounts)
    */
   getExpenseTransactions(): readonly Transaction[] {
-    return this._transactions.filter(tx => tx.isExpense());
+    return this._transactions.filter(tx => tx.isExpense() && !tx.excludeFromTotal);
   }
 
   /**
@@ -463,6 +462,29 @@ export class ExpenseStatement {
 
     // Return the larger amount as primary
     return totalPesos >= totalUSD ? Money.pesos(totalPesos) : Money.dollars(totalUSD);
+  }
+
+  /**
+   * Returns total expenses split by currency (ARS and USD separately)
+   */
+  getTotalExpensesByCurrency(): { pesos: Money; dollars: Money } {
+    const expenseTransactions = this.getExpenseTransactions();
+
+    let totalPesos = 0;
+    let totalUSD = 0;
+
+    for (const transaction of expenseTransactions) {
+      if (transaction.amount.getCurrency() === 'ARS') {
+        totalPesos += transaction.amount.getValue();
+      } else if (transaction.amount.getCurrency() === 'USD') {
+        totalUSD += transaction.amount.getValue();
+      }
+    }
+
+    return {
+      pesos: Money.pesos(totalPesos),
+      dollars: Money.dollars(totalUSD),
+    };
   }
 
   /**

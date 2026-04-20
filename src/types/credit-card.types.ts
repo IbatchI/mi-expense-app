@@ -5,16 +5,18 @@
 export interface CreditCardTransaction {
   /** Transaction date in YYYY-MM-DD format */
   date: string;
-  /** Merchant or establishment name */
-  merchant: string;
-  /** Installment information (e.g., "1/12" or null for single payment) */
-  installment: string | null;
-  /** Voucher or reference number */
-  voucher: string;
-  /** Amount in pesos (local currency) */
+  /** Merchant or concept name */
+  description: string;
+  /** Amount in pesos (local currency). 0 for USD transactions. Negative for payments/discounts. */
   amountPesos: number;
-  /** Amount in dollars (foreign currency) */
+  /** Amount in dollars (foreign currency). 0 for ARS transactions. */
   amountDollars: number;
+  /** Transaction type */
+  type: 'purchase' | 'payment' | 'fee' | 'credit' | 'discount' | 'tax';
+  /** Installment information (e.g., "05/06" or null for single payment) */
+  installments: string | null;
+  /** Voucher or reference number */
+  reference: string | null;
 }
 
 export interface CreditCardPeriod {
@@ -105,18 +107,18 @@ export interface ExpenseCategory {
 
 /** Enhanced transaction with categorization */
 export interface CategorizedTransaction {
-  // Existing fields (flexible to handle both Galicia and Pampa formats)
   date: string;
   description: string;
-  amount?: number;           // Pampa format
-  amountPesos?: number;      // Galicia format  
-  amountUSD?: number;        // USD transactions
-  currency?: string;
-  type: "purchase" | "payment" | "fee" | "tax";
-  installments?: string;
-  reference?: string;
-  
-  // NEW: Categorization fields
+  amountPesos: number;
+  amountDollars: number;
+  type: "purchase" | "payment" | "fee" | "credit" | "discount" | "tax";
+  installments?: string | null;
+  reference?: string | null;
+
+  // Bank-applied financial discounts that should not count as expenses
+  excludeFromTotal?: boolean;
+
+  // Categorization fields
   category: string;
   tags: string[];
   confidence: number;

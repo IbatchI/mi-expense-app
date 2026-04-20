@@ -45,9 +45,8 @@ export interface PresentedStatement {
   categoryBreakdown: PresentedCategoryBreakdown;
   analytics: {
     totalExpenses: {
-      amount: number;
-      formatted: string;
-      currency: string;
+      pesos: { amount: number; formatted: string; currency: string; };
+      dollars: { amount: number; formatted: string; currency: string; };
     };
     stats: {
       totalTransactions: number;
@@ -81,6 +80,7 @@ export interface PresentedTransaction {
   installments?: string;
   reference?: string;
   voucher?: string;
+  excludeFromTotal?: boolean;
   category?: {
     name: string;
     englishName: string;
@@ -150,7 +150,13 @@ export class StatementPresenter {
       transactions: this.presentTransactions(statement.transactions),
       categoryBreakdown: this.presentCategoryBreakdown(statement.categoryBreakdown),
       analytics: {
-        totalExpenses: this.presentMoney(statement.getTotalExpenses()),
+        totalExpenses: (() => {
+          const totals = statement.getTotalExpensesByCurrency();
+          return {
+            pesos: this.presentMoney(totals.pesos),
+            dollars: this.presentMoney(totals.dollars),
+          };
+        })(),
         stats: frontendData.stats
       }
     };
@@ -195,6 +201,9 @@ export class StatementPresenter {
       }
       if (frontendTx.voucher) {
         presentedTx.voucher = frontendTx.voucher;
+      }
+      if (frontendTx.excludeFromTotal) {
+        presentedTx.excludeFromTotal = true;
       }
 
       // Enhance category with full design information

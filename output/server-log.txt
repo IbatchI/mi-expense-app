@@ -1,0 +1,217 @@
+
+> mi-expense-app@1.0.0 dev
+> ts-node src/adapters/web/dev-server.ts
+
+
+🚀 Mi Expense App Server Started
+📍 Environment: development
+🌐 Server: http://localhost:3001
+🏥 Health: http://localhost:3001/health
+📖 API Docs: http://localhost:3001/api
+📝 Statement Processing: http://localhost:3001/api/v1/statements/process
+🔒 CORS Origins: http://localhost:3000, http://127.0.0.1:3000, http://localhost:3001, http://127.0.0.1:3001
+
+✅ Development server ready for PDF processing!
+🔄 Watching for file changes...
+
+📋 Available endpoints:
+  • POST /api/v1/statements/process - Process PDF statements
+  • GET  /health - Health check
+  • GET  /api/v1/health/detailed - Detailed health check
+  • POST /api/v1/test-llm - Test LLM connectivity
+  • GET  /api - API documentation
+
+[2026-03-23T14:04:44.795Z] POST /api/v1/statements/process - ::1
+[INFO] Starting complete file processing {"requestId":"req_1774274684798_q94esdk0dyb","filePath":"/tmp/statement_1774274684797.pdf","provider":"github"}
+[INFO] Step 1: Extracting text from PDF {"requestId":"req_1774274684798_q94esdk0dyb"}
+[DEBUG] Starting PDF text extraction {"bufferSize":438177,"bankType":"unknown"}
+🔍 DEBUG: Raw PDF data dumped to /Users/batch/Documents/batch/mi-expense-app/output/debug
+   📄 Raw text: raw-pdf-text-2026-03-23T14-04-44-866Z.txt
+   📊 Debug data: pdf-parse-debug-2026-03-23T14-04-44-866Z.json
+   🔢 Hex dump: buffer-hex-2026-03-23T14-04-44-866Z.txt
+   📝 Text length: 14293 chars, 6 pages
+   ⚠️  Control chars: 251
+[INFO] PDF parsing completed {"pageCount":6,"textLength":14293,"hasMetadata":true}
+[DEBUG] No bank-specific preprocessing applied (unknown bank type) 
+[INFO] PDF processing completed {"requestId":"req_1774274684798_q94esdk0dyb","pageCount":6,"textLength":14293}
+[INFO] Step 2: Detecting bank {"requestId":"req_1774274684798_q94esdk0dyb"}
+[DEBUG] Starting bank detection {"textLength":14293,"textPreview":"\n\n  Resumen N° VI00000000062132419\n Tarjeta Crédito VISA\nLUCAS MATEO HERNANDEZ         \n Consumidor FinalCUIT Banco: 30-50000173-5\nCALLE 30 1086, GENERAL PICO, L6360EGV N° Cuenta: 1181500877Sucursal: ..."}
+[INFO] Bank detection completed {"bank":"galicia","confidence":1,"patternsMatched":7,"processingTime":1}
+[INFO] Bank detection completed {"requestId":"req_1774274684798_q94esdk0dyb","bank":"galicia","confidence":1}
+[INFO] Step 2.5: Applying bank-specific preprocessing {"requestId":"req_1774274684798_q94esdk0dyb","bank":"galicia"}
+🧹 Starting Galicia text preprocessing...
+✅ Preprocessing complete: 12 transactions, 3 taxes
+[INFO] Bank-specific preprocessing applied {"requestId":"req_1774274684798_q94esdk0dyb","bankType":"galicia","originalLength":14293,"cleanedTextLength":2034}
+[INFO] Step 3: Testing LLM connection {"requestId":"req_1774274684798_q94esdk0dyb"}
+[DEBUG] Testing LLM connection {"provider":"github","hasApiKey":true}
+   🔍 Testing connection to: https://models.inference.ai.azure.com/chat/completions
+   🔑 Using model: gpt-4o
+   📡 Response status: 200 OK
+   ✅ Response data received
+[INFO] LLM connection test successful {"provider":"github"}
+[INFO] LLM connection test successful {"requestId":"req_1774274684798_q94esdk0dyb"}
+[INFO] Step 4: Extracting statement data {"requestId":"req_1774274684798_q94esdk0dyb"}
+[INFO] Starting statement extraction {"textLength":2034,"bankType":"galicia","provider":"github"}
+[DEBUG] Prompt prepared {"bankType":"galicia","promptLength":6904,"estimatedTokens":1726}
+🤖 Using GitHub Models: gpt-4o
+✅ Received response from GitHub Models
+
+📈 Extraction Summary:
+   Holder: LUCAS MATEO HERNANDEZ
+   Bank: Banco Galicia
+   Account: 1181500877
+   Transactions: 13
+   Total Pesos: $481,092.32
+   Total Dollars: $2.3
+   Period: 2026-02-19 to 2026-03-19
+🔍 RAW LLM extractedData (first tx): {
+  "date": "2026-02-01",
+  "merchant": "Spotify",
+  "amountPesos": 0,
+  "amountDollars": 2.3,
+  "installments": null,
+  "reference": "402608",
+  "type": "purchase"
+}
+🔍 RAW LLM totals: {
+  "pesos": 481092.32,
+  "dollars": 2.3,
+  "minimumPayment": 35590
+}
+[INFO] Statement extraction completed successfully {"bankType":"galicia","provider":"github","model":"gpt-4","confidence":0.9,"transactionCount":13,"processingTime":7590,"tokensUsed":2235}
+[INFO] Statement extraction completed {"requestId":"req_1774274684798_q94esdk0dyb","transactionCount":13}
+[INFO] Step 5: Categorizing expenses {"requestId":"req_1774274684798_q94esdk0dyb"}
+[INFO] Starting expense categorization {"transactionCount":13,"provider":"github"}
+[DEBUG] Categories loaded {"categoryCount":14,"categoryNames":["Hogar","Alimentación","Transporte","Ocio y Entretenimiento","Viajes","Salud","Belleza y Cuidado Personal","Indumentaria","Compras Personales","Educación","Mascotas","Trabajo / Negocio","Descuentos","Otros"]}
+   🔍 Analyzing transactions for categorization...
+   📊 Found 13 transactions to classify
+   📝 Generated classification prompt (11094 chars)
+🤖 Using GitHub Models: gpt-4o
+✅ Received response from GitHub Models
+
+📈 Extraction Summary:
+   Holder: Unknown
+   Bank: Unknown
+   Account: Unknown
+   Transactions: 0
+   Total Pesos: $0
+   Total Dollars: $0
+🔍 RAW LLM extractedData (first tx): undefined
+🔍 RAW LLM totals: undefined
+   🔍 Valid classifications: 13/13
+   ✅ Parsed 13 classifications
+[INFO] Expense categorization completed {"totalTransactions":13,"categorizedTransactions":13,"uncategorizedTransactions":0,"categorizationRate":"100.0","categoriesFound":7,"processingTime":4462}
+[INFO] Expense categorization completed {"requestId":"req_1774274684798_q94esdk0dyb","categorizedCount":13}
+[INFO] Step 6: Creating expense statement entity {"requestId":"req_1774274684798_q94esdk0dyb"}
+Transaction 20251117_juleriaquecomar_007897 falls outside statement period
+Transaction 20251206_payuaradidas_005736 falls outside statement period
+Transaction 20260109_mercadopagokinderlan_956190 falls outside statement period
+Transaction 20260113_mercadopagofarmacity_741811 falls outside statement period
+[2026-03-23T14:05:51.351Z] POST /api/v1/statements/process - ::1
+[INFO] Starting complete file processing {"requestId":"req_1774274751355_kyhlo0wv8yn","filePath":"/tmp/statement_1774274751354.pdf","provider":"github"}
+[INFO] Step 1: Extracting text from PDF {"requestId":"req_1774274751355_kyhlo0wv8yn"}
+[DEBUG] Starting PDF text extraction {"bufferSize":439508,"bankType":"unknown"}
+🔍 DEBUG: Raw PDF data dumped to /Users/batch/Documents/batch/mi-expense-app/output/debug
+   📄 Raw text: raw-pdf-text-2026-03-23T14-05-51-390Z.txt
+   📊 Debug data: pdf-parse-debug-2026-03-23T14-05-51-390Z.json
+   🔢 Hex dump: buffer-hex-2026-03-23T14-05-51-390Z.txt
+   📝 Text length: 15062 chars, 6 pages
+   ⚠️  Control chars: 266
+[INFO] PDF parsing completed {"pageCount":6,"textLength":15062,"hasMetadata":true}
+[DEBUG] No bank-specific preprocessing applied (unknown bank type) 
+[INFO] PDF processing completed {"requestId":"req_1774274751355_kyhlo0wv8yn","pageCount":6,"textLength":15062}
+[INFO] Step 2: Detecting bank {"requestId":"req_1774274751355_kyhlo0wv8yn"}
+[DEBUG] Starting bank detection {"textLength":15062,"textPreview":"\n\n  Resumen N° VI00000000064057223\n Tarjeta Crédito VISA\nLUCAS MATEO HERNANDEZ         \n Consumidor FinalCUIT Banco: 30-50000173-5\nCALLE 30 1086, GENERAL PICO, L6360EGV N° Cuenta: 1181500877Sucursal: ..."}
+[INFO] Bank detection completed {"bank":"galicia","confidence":1,"patternsMatched":7,"processingTime":0}
+[INFO] Bank detection completed {"requestId":"req_1774274751355_kyhlo0wv8yn","bank":"galicia","confidence":1}
+[INFO] Step 2.5: Applying bank-specific preprocessing {"requestId":"req_1774274751355_kyhlo0wv8yn","bank":"galicia"}
+🧹 Starting Galicia text preprocessing...
+✅ Preprocessing complete: 27 transactions, 3 taxes
+[INFO] Bank-specific preprocessing applied {"requestId":"req_1774274751355_kyhlo0wv8yn","bankType":"galicia","originalLength":15062,"cleanedTextLength":3515}
+[INFO] Step 3: Testing LLM connection {"requestId":"req_1774274751355_kyhlo0wv8yn"}
+[DEBUG] Testing LLM connection {"provider":"github","model":"gpt-4o-mini","hasApiKey":true}
+   🔍 Testing connection to: https://models.inference.ai.azure.com/chat/completions
+   🔑 Using model: gpt-4o-mini
+   📡 Response status: 200 OK
+   ✅ Response data received
+[INFO] LLM connection test successful {"provider":"github","model":"gpt-4o-mini"}
+[INFO] LLM connection test successful {"requestId":"req_1774274751355_kyhlo0wv8yn"}
+[INFO] Step 4: Extracting statement data {"requestId":"req_1774274751355_kyhlo0wv8yn"}
+[INFO] Starting statement extraction {"textLength":3515,"bankType":"galicia","provider":"github","model":"gpt-4o-mini"}
+[DEBUG] Prompt prepared {"bankType":"galicia","promptLength":8385,"estimatedTokens":2097}
+🤖 Using GitHub Models: gpt-4o-mini
+✅ Received response from GitHub Models
+
+📈 Extraction Summary:
+   Holder: LUCAS MATEO HERNANDEZ
+   Bank: Banco Galicia
+   Account: 1181500877
+   Transactions: 28
+   Total Pesos: $658,645.76
+   Total Dollars: $1,187.17
+   Period: 2026-02-19 to 2026-03-19
+🔍 RAW LLM extractedData (first tx): {
+  "date": "2026-02-23",
+  "merchant": "GOOGLE HBO Max Stream",
+  "amountPesos": 0,
+  "amountDollars": 6.99,
+  "reference": "410228",
+  "type": "purchase"
+}
+🔍 RAW LLM totals: {
+  "pesos": 658645.76,
+  "dollars": 1187.17,
+  "minimumPayment": 637920
+}
+[INFO] Statement extraction completed successfully {"bankType":"galicia","provider":"github","model":"gpt-4o-mini","confidence":0.9,"transactionCount":28,"processingTime":38862,"tokensUsed":2975}
+[INFO] Statement extraction completed {"requestId":"req_1774274751355_kyhlo0wv8yn","transactionCount":28}
+[INFO] Step 5: Categorizing expenses {"requestId":"req_1774274751355_kyhlo0wv8yn"}
+[INFO] Starting expense categorization {"transactionCount":28,"provider":"github"}
+[DEBUG] Categories loaded {"categoryCount":14,"categoryNames":["Hogar","Alimentación","Transporte","Ocio y Entretenimiento","Viajes","Salud","Belleza y Cuidado Personal","Indumentaria","Compras Personales","Educación","Mascotas","Trabajo / Negocio","Descuentos","Otros"]}
+   🔍 Analyzing transactions for categorization...
+   📊 Found 28 transactions to classify
+   📝 Generated classification prompt (11923 chars)
+🤖 Using GitHub Models: gpt-4o-mini
+✅ Received response from GitHub Models
+
+📈 Extraction Summary:
+   Holder: Unknown
+   Bank: Unknown
+   Account: Unknown
+   Transactions: 0
+   Total Pesos: $0
+   Total Dollars: $0
+🔍 RAW LLM extractedData (first tx): undefined
+🔍 RAW LLM totals: undefined
+   🔍 Valid classifications: 28/28
+   ✅ Parsed 28 classifications
+[INFO] Expense categorization completed {"totalTransactions":28,"categorizedTransactions":28,"uncategorizedTransactions":0,"categorizationRate":"100.0","categoriesFound":13,"processingTime":28102}
+[INFO] Expense categorization completed {"requestId":"req_1774274751355_kyhlo0wv8yn","categorizedCount":28}
+[INFO] Step 6: Creating expense statement entity {"requestId":"req_1774274751355_kyhlo0wv8yn"}
+Transaction 20260223_googlehbomaxstream_410228 falls outside statement period
+Transaction 20260225_mercadopagomariavict_254288 falls outside statement period
+Transaction 20260225_mercadopagomendicoad_392847 falls outside statement period
+Transaction 20260226_mercadopagomarianaha_407104 falls outside statement period
+Transaction 20260226_mercadopagotuenti_239410 falls outside statement period
+Transaction 20260226_githubinc_536642 falls outside statement period
+Transaction 20260228_mercadopagonorbertoa_591007 falls outside statement period
+Transaction 20260228_mercadopagolos22_665318 falls outside statement period
+Transaction 20260228_pyuadidas_041354 falls outside statement period
+Transaction 20260301_mercadopagonicolasax_021187 falls outside statement period
+Transaction 20260301_spotify_489022 falls outside statement period
+Transaction 20260302_githubinc_643173 falls outside statement period
+Transaction 20260305_sirovelonet_006102 falls outside statement period
+Transaction 20260305_pagos360corpico_003777 falls outside statement period
+Transaction 20260313_mercadopagocapitanoc_125110 falls outside statement period
+Transaction 20260316_ebayo221435470768_884607 falls outside statement period
+Transaction 20260316_ebayo221435470769_885307 falls outside statement period
+Transaction 20251117_juleriaquecomar_007897 falls outside statement period
+Transaction 20251206_payuaradidas_005736 falls outside statement period
+Transaction 20260109_mercadopagokinderlan_956190 falls outside statement period
+Transaction 20260224_mercadopagotodosuelt_939639 falls outside statement period
+Transaction 20260224_mercadopagocamuzziga_200714 falls outside statement period
+Transaction 20260224_veterinariaespania_526554 falls outside statement period
+Transaction 20260319_dbrg5617_TAX falls outside statement period
+
+📴 Received SIGTERM. Starting graceful shutdown...
+✅ Server closed. Exiting process.
