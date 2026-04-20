@@ -56,7 +56,7 @@ HOLDER:
 
 ACCOUNT NUMBER:
 - Look for: "Nº de Cuenta", "N DE CUENTA:", "Nº de Socio:", "Cuenta", "Tarjeta"
-- Keep digits only, remove spaces/dashes
+- Preserve the value as-is from the document; only remove surrounding whitespace
 
 BANK:
 - Extract from header/footer. Common: "Banco Galicia", "Banco de la Pampa", "Banco Santander", "BBVA", "ICBC", etc.
@@ -115,7 +115,8 @@ TRANSACTION TYPE DETECTION
 type: "payment"
   Description contains: "PAGO", "SU PAGO", "PAYMENT", "DEBITO AUTOMATICO", "TRANSFERENCIA"
   Examples: "SU PAGO EN PESOS", "PAGO TARJETA DE CREDITO"
-  → amountPesos is NEGATIVE
+  → amountPesos is NEGATIVE (most banks show it as negative; if the statement shows it as
+    positive but it clearly reduces the balance, set amountPesos as NEGATIVE anyway)
 
 type: "discount"
   Description contains: "DESCUENTO", "DISCOUNT", "PROMO", "PROMOCION", "REINTEGRO",
@@ -129,11 +130,17 @@ type: "tax"
   → amountPesos is positive (it's a charge)
 
 type: "fee"
-  Description contains: "CARGO", "COMISION", "ARANCEL", "MANTENIMIENTO", "MEMBRESIA"
+  Description contains: "CARGO", "COMISION", "ARANCEL", "MANTENIMIENTO", "MEMBRESIA",
+                         "FINANCIACION", "INTERES", "CFT", "TNA", "COSTO FINANCIERO"
   → amountPesos is positive (it's a charge)
+  Examples: "FINANCIACION CUOTAS", "INTERES POR MORA", "CFT 180,25% N.A."
 
 type: "credit"
-  Any other negative amount not clearly a payment or discount
+  A negative reversal or refund for a specific prior purchase — not a payment to the bank,
+  not a promotional discount. Typically labeled "DEVOLUCION", "ANULACION", "REVERSO",
+  "AJUSTE A FAVOR", or a reimbursement of a specific charge.
+  Examples: "DEVOLUCION CARGO DOBLE", "ANULACION COMPRA XXXX", "AJUSTE A FAVOR CLIENTE"
+  → amountPesos is NEGATIVE
 
 type: "purchase"
   All regular commercial transactions (default)
